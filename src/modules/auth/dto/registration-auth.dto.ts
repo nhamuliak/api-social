@@ -1,5 +1,5 @@
 import { LoginAuthDto } from './login-auth.dto';
-import { IsNotEmpty, IsOptional } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class RegistrationAuthDto extends LoginAuthDto {
     @IsNotEmpty()
@@ -13,4 +13,7 @@ export class RegistrationAuthDto extends LoginAuthDto {
 
     @IsOptional()
     avatar?: string;
+
+    @IsBoolean()
+    acceptTerms: boolean;
 }
