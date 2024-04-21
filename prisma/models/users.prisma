@@ -1,4 +1,4 @@
-model User {
+model Users {
   id Int @id @default(autoincrement())
   firstName String
   lastName String
@@ -9,4 +9,22 @@ model User {
   acceptTerms Boolean @default(false)
   isOnline Boolean @default(false)
   createdAt DateTime @default(now())
+  tokens UserTokens[]
+  // resetPasswordHashes ResetPasswordHashes[]
 }
+
+model UserTokens {
+  id Int @id @default(autoincrement())
+  refreshTokenHash String
+  user Users @relation(fields: [userId], references: [id])
+  userId Int
+  createdAt DateTime @default(now())
+}
+
+// model ResetPasswordHashes {
+//   hash String @id @default(uuid())
+//   used Boolean @default(false)
+//   user Users @relation(fields: [userId], references: [id])
+//   userId Int
+//   createdAt DateTime @default(now())
+// }
