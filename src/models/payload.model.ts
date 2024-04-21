@@ -5,3 +5,7 @@ export interface PayloadModel {
     lastName: string;
     isOnline: boolean;
 }
+
+export interface RefreshPayloadModel extends PayloadModel {
+    refreshToken: string;
+}

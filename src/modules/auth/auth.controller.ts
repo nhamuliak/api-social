@@ -6,6 +6,7 @@ import { LoginAuthDto, RegistrationAuthDto } from './dto';
 import { User } from '@core/decorators';
 import { AccessGuard } from '@core/guards/access/access.guard';
 import { RefreshGuard } from '@core/guards/refresh/refresh.guard';
+import { RefreshPayloadModel } from '@models/payload.model';
 
 @Controller('auth')
 export class AuthController {
@@ -39,10 +40,11 @@ export class AuthController {
     @UseGuards(RefreshGuard)
     @Post('refresh')
     public async refresh(
-        @User() body: { userId: number; refreshToken: string },
+        @User() { id: userId, refreshToken }: RefreshPayloadModel,
         @Res() res: Response
     ): Promise<Response<TokenModel>> {
-        const tokens = await this.authService.refresh(body.userId, body.refreshToken);
+        console.log('user: ', userId, refreshToken);
+        const tokens = await this.authService.refresh(userId, refreshToken);
 
         return res.status(HttpStatus.OK).send(tokens);
     }

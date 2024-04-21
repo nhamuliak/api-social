@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { UserService } from '@modules/user/user.service';
-import { comparePasswords, getTokens, hashPassword } from '@utils/helper';
+import { compareProperties, hashProperty, getTokens } from '@utils/helper';
 import { TokenModel, UserModel, PayloadModel } from '@models/index';
 import { LoginAuthDto, RegistrationAuthDto } from '../../dto';
 import { TokenService } from '@modules/auth/services/token/token.service';
@@ -24,7 +24,7 @@ export class AuthService {
         }
 
         // hash password
-        registrationAuthDto.password = await hashPassword(registrationAuthDto.password);
+        registrationAuthDto.password = await hashProperty(registrationAuthDto.password);
 
         await this.userService.createUser(registrationAuthDto);
     }
@@ -36,7 +36,7 @@ export class AuthService {
             throw new BadRequestException('You email or password is incorrect.');
         }
 
-        const isMatch = await comparePasswords(loginAuthDto.password, user.password);
+        const isMatch = await compareProperties(loginAuthDto.password, user.password);
 
         if (!isMatch) {
             throw new BadRequestException('You email or password is incorrect.');
@@ -44,7 +44,7 @@ export class AuthService {
 
         const payload: PayloadModel = this.getPayload(user);
         const tokens: TokenModel = await getTokens(payload);
-        const refreshTokenHash = await hashPassword(tokens.refreshToken);
+        const refreshTokenHash = await hashProperty(tokens.refreshToken);
 
         await this.tokenService.storeRefreshToken(user.id, refreshTokenHash);
 
@@ -64,7 +64,7 @@ export class AuthService {
 
         const hash = await this.tokenService.getTokenByUserId(userId);
 
-        const isMatch = await comparePasswords(hash, refreshToken);
+        const isMatch = await compareProperties(refreshToken, hash);
 
         if (!isMatch) {
             throw new BadRequestException('Request denied.');
@@ -72,7 +72,7 @@ export class AuthService {
 
         const payload: PayloadModel = this.getPayload(user);
         const tokens: TokenModel = await getTokens(payload);
-        const refreshTokenHash = await hashPassword(tokens.refreshToken);
+        const refreshTokenHash = await hashProperty(tokens.refreshToken);
 
         await this.tokenService.storeRefreshToken(user.id, refreshTokenHash);
 

@@ -5,14 +5,14 @@ import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@utils/constants';
 
 const jwtService = new JwtService();
 
-export async function comparePasswords(password: string, hash: string): Promise<boolean> {
-    return await bcrypt.compare(password, hash);
+export async function compareProperties(property: string, hash: string): Promise<boolean> {
+    return await bcrypt.compare(property, hash);
 }
 
-export async function hashPassword(password: string): Promise<string> {
+export async function hashProperty(property: string): Promise<string> {
     const salt = await bcrypt.genSalt();
 
-    return await bcrypt.hash(password, salt);
+    return await bcrypt.hash(property, salt);
 }
 
 export async function getTokens(payload: PayloadModel): Promise<TokenModel> {
