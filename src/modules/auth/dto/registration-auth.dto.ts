@@ -1,19 +1,20 @@
 import { LoginAuthDto } from './login-auth.dto';
-import { IsBoolean, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional, IsPositive } from 'class-validator';
 
 export class RegistrationAuthDto extends LoginAuthDto {
     @IsNotEmpty()
-    firstName: string;
+    public firstName: string;
 
     @IsNotEmpty()
-    lastName?: string;
+    public lastName?: string;
 
     @IsOptional()
-    age?: number;
+    @IsPositive()
+    public age?: number;
 
     @IsOptional()
-    avatar?: string;
+    public avatar?: string;
 
     @IsBoolean()
-    acceptTerms: boolean;
+    public acceptTerms: boolean;
 }

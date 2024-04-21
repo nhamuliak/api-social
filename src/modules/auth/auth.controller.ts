@@ -1,71 +1,41 @@
-import * as bcrypt from 'bcrypt';
-import { Controller, Post, Body, BadRequestException, Res, HttpStatus } from '@nestjs/common';
+import { Response } from 'express';
+import { Controller, Post, Body, Res, HttpStatus } from '@nestjs/common';
+import { TokenModel } from '@models/token.model';
 import { AuthService } from './auth.service';
 import { LoginAuthDto, RegistrationAuthDto } from './dto';
-import { UserService } from '@modules/user/user.service';
-import { JwtService } from '@nestjs/jwt';
-import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
-    constructor(
-        private readonly authService: AuthService,
-        private readonly userService: UserService,
-        private readonly jwtService: JwtService
-    ) {}
+    constructor(private readonly authService: AuthService) {}
 
     @Post('registration')
-    async registration(@Res() res: Response, @Body() registrationAuthDto: RegistrationAuthDto) {
-        const user = await this.userService.getUserByEmail(registrationAuthDto.email);
+    public async registration(
+        @Res() res: Response,
+        @Body() registrationAuthDto: RegistrationAuthDto
+    ): Promise<Response<string>> {
+        await this.authService.registration(registrationAuthDto);
 
-        if (user) {
-            throw new BadRequestException('The email has already existed.');
-        }
-
-        if (registrationAuthDto.acceptTerms === false) {
-            throw new BadRequestException('You cannot register without accepted terms.');
-        }
-
-        // hash password
-        const hash = await bcrypt.hash(registrationAuthDto.password, 10);
-
-        const body = {
-            ...registrationAuthDto,
-            password: hash
-        };
-
-        await this.authService.registration(body);
-
-        return res.status(HttpStatus.CREATED).send('Your registration is successful.');
+        return res.status(HttpStatus.OK).send('Your registration is successful.');
     }
 
     @Post('login')
-    async login(@Res() res: Response, @Body() loginAuthDto: LoginAuthDto) {
-        const user = await this.userService.getUserByEmail(loginAuthDto.email);
+    public async login(@Res() res: Response, @Body() loginAuthDto: LoginAuthDto): Promise<Response<TokenModel>> {
+        const tokens = await this.authService.login(loginAuthDto);
 
-        if (!user) {
-            throw new BadRequestException('You email or password is incorrect.');
-        }
-
-        const isMatch = await bcrypt.compare(loginAuthDto.password, user.password);
-
-        if (!isMatch) {
-            throw new BadRequestException('You email or password is incorrect.');
-        }
-
-        const payload = { email: user.email, firstName: user.firstName };
-
-        const token = await this.jwtService.signAsync(payload);
-
-        res.cookie('token', token);
-
-        return res.status(HttpStatus.OK).send(token);
+        return res.status(HttpStatus.OK).send(tokens);
     }
 
     @Post('logout')
-    logout(@Res() res: Response) {
-        res.clearCookie('token');
+    public async logout(@Res() res: Response): Promise<Response<string>> {
+        await this.authService.logout();
 
         return res.status(HttpStatus.NO_CONTENT).send('Logged out.');
+    }
+
+    @Post('refresh')
+    public async refresh(@Res() res: Response): Promise<Response<TokenModel>> {
+        const tokens = await this.authService.refresh();
+
+        return res.status(HttpStatus.OK).send(tokens);
     }
 }
