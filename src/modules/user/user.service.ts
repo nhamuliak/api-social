@@ -1,37 +1,64 @@
 import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from '@core/prisma/prisma.service';
+import { UpdateUserDto } from '@modules/user/dto/update-user.dto';
+import { UserModel } from '@models/index';
+import { RegistrationAuthDto } from '@modules/auth/dto';
 
 @Injectable()
 export class UserService {
     constructor(private prismaService: PrismaService) {}
 
-    public getUserByEmail(email: string): any {
-        return this.prismaService.user.findUnique({
+    public async getUsers(firstName: string, lastName: string, page: number, limit: number = 20): Promise<any> {
+        return this.prismaService.$transaction([
+            this.prismaService.users.count(),
+            this.prismaService.users.findMany({
+                skip: page >= 0 ? (page - 1) * limit : 0,
+                take: limit,
+                where: {
+                    firstName: {
+                        contains: firstName ?? '',
+                        mode: 'insensitive'
+                    },
+                    lastName: {
+                        contains: lastName ?? '',
+                        mode: 'insensitive'
+                    }
+                },
+                orderBy: {
+                    firstName: 'desc'
+                }
+            })
+        ]);
+    }
+
+    public async getUserByEmail(email: string): Promise<UserModel> {
+        return this.prismaService.users.findUnique({
             where: {
                 email
             }
         });
     }
 
-    create(createUserDto: CreateUserDto) {
-        return 'This action adds a new user';
+    public async getUserById(id: number): Promise<any> {
+        return this.prismaService.users.findUnique({
+            where: {
+                id
+            }
+        });
     }
 
-    findAll() {
-        return `This action returns all user`;
+    public async createUser(registrationAuthDto: RegistrationAuthDto): Promise<UserModel> {
+        return this.prismaService.users.create({
+            data: Object.assign(registrationAuthDto)
+        });
     }
 
-    findOne(id: number) {
-        return `This action returns a #${id} user`;
-    }
-
-    update(id: number, updateUserDto: UpdateUserDto) {
-        return `This action updates a #${id} user`;
-    }
-
-    remove(id: number) {
-        return `This action removes a #${id} user`;
+    public async updateUserById(id: number, data: UpdateUserDto): Promise<any> {
+        return this.prismaService.users.update({
+            where: {
+                id
+            },
+            data
+        });
     }
 }
