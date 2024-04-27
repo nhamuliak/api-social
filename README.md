@@ -26,6 +26,15 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Add new "models" for the `Prisma`
+### Steps:
+```
+1. Create a new model in the prisma -> models
+2. Connect in the prismix.config.json file in the "input" array
+3. run command: npm run prismix to re-generate a new schema.prisma
+4. to create the DB migration need to run command: npx prisma migrate dev --name <name_of_migration>  
+```
+
 ## Installation
 
 ```bash
