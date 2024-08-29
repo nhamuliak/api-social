@@ -9,17 +9,19 @@ generator client {
 }
 
 model Users {
-  id          Int          @id @default(autoincrement())
-  firstName   String
-  lastName    String
-  age         Int?
-  email       String       @unique
-  password    String
-  avatar      String?
-  acceptTerms Boolean      @default(false)
-  isOnline    Boolean      @default(false)
-  createdAt   DateTime     @default(now())
-  tokens      UserTokens[] @relation(name: "UserTokensToUsers")
+  id                Int                 @id @default(autoincrement())
+  firstName         String
+  lastName          String
+  age               Int?
+  email             String              @unique
+  password          String
+  avatar            String?
+  acceptTerms       Boolean             @default(false)
+  isOnline          Boolean             @default(false)
+  createdAt         DateTime            @default(now())
+  tokens            UserTokens[]        @relation(name: "UserTokensToUsers")
+  messages          Messages[]          @relation(name: "MessagesToUsers")
+  userConversations UserConversations[] @relation(name: "UserConversationsToUsers")
 }
 
 model UserTokens {
@@ -28,6 +30,33 @@ model UserTokens {
   user             Users    @relation(name: "UserTokensToUsers", fields: [userId], references: [id])
   userId           Int
   createdAt        DateTime @default(now())
+}
+
+model UserConversations {
+  id             Int           @id @default(autoincrement())
+  conversation   Conversations @relation(name: "ConversationsToUserConversations", fields: [conversationId], references: [id])
+  conversationId Int
+  user           Users         @relation(name: "UserConversationsToUsers", fields: [userId], references: [id])
+  userId         Int
+}
+
+model Conversations {
+  id                Int                 @id @default(autoincrement())
+  type              String
+  createdAt         DateTime            @default(now())
+  messages          Messages[]          @relation(name: "ConversationsToMessages")
+  userConversations UserConversations[] @relation(name: "ConversationsToUserConversations")
+}
+
+model Messages {
+  id             Int           @id @default(autoincrement())
+  text           String
+  isRead         Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  conversation   Conversations @relation(name: "ConversationsToMessages", fields: [conversationId], references: [id])
+  conversationId Int
+  user           Users         @relation(name: "MessagesToUsers", fields: [userId], references: [id])
+  userId         Int
 }
 
 model Terms {
