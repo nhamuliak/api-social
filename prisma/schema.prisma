@@ -9,19 +9,19 @@ generator client {
 }
 
 model Users {
-  id                Int                 @id @default(autoincrement())
-  firstName         String
-  lastName          String
-  age               Int?
-  email             String              @unique
-  password          String
-  avatar            String?
-  acceptTerms       Boolean             @default(false)
-  isOnline          Boolean             @default(false)
-  createdAt         DateTime            @default(now())
-  tokens            UserTokens[]        @relation(name: "UserTokensToUsers")
-  messages          Messages[]          @relation(name: "MessagesToUsers")
-  userConversations UserConversations[] @relation(name: "UserConversationsToUsers")
+  id          Int          @id @default(autoincrement())
+  firstName   String
+  lastName    String
+  age         Int?
+  email       String       @unique
+  password    String
+  avatar      String?
+  acceptTerms Boolean      @default(false)
+  isOnline    Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  tokens      UserTokens[] @relation(name: "UserTokensToUsers")
+  messages    Messages[]   @relation(name: "MessagesToUsers")
+  roomUsers   RoomUsers[]  @relation(name: "RoomUsersToUsers")
 }
 
 model UserTokens {
@@ -32,31 +32,34 @@ model UserTokens {
   createdAt        DateTime @default(now())
 }
 
-model UserConversations {
-  id             Int           @id @default(autoincrement())
-  conversation   Conversations @relation(name: "ConversationsToUserConversations", fields: [conversationId], references: [id])
-  conversationId Int
-  user           Users         @relation(name: "UserConversationsToUsers", fields: [userId], references: [id])
-  userId         Int
+model RoomUsers {
+  id     Int   @id @default(autoincrement())
+  room   Rooms @relation(name: "RoomUsersToRooms", fields: [roomId], references: [id])
+  roomId Int
+  user   Users @relation(name: "RoomUsersToUsers", fields: [userId], references: [id])
+  userId Int
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@index([userId])
 }
 
-model Conversations {
-  id                Int                 @id @default(autoincrement())
-  type              String
-  createdAt         DateTime            @default(now())
-  messages          Messages[]          @relation(name: "ConversationsToMessages")
-  userConversations UserConversations[] @relation(name: "ConversationsToUserConversations")
+model Rooms {
+  id        Int         @id @default(autoincrement())
+  createdAt DateTime    @default(now())
+  messages  Messages[]  @relation(name: "MessagesToRooms")
+  roomUsers RoomUsers[] @relation(name: "RoomUsersToRooms")
 }
 
 model Messages {
-  id             Int           @id @default(autoincrement())
-  text           String
-  isRead         Boolean       @default(false)
-  createdAt      DateTime      @default(now())
-  conversation   Conversations @relation(name: "ConversationsToMessages", fields: [conversationId], references: [id])
-  conversationId Int
-  user           Users         @relation(name: "MessagesToUsers", fields: [userId], references: [id])
-  userId         Int
+  id        Int      @id @default(autoincrement())
+  text      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  room      Rooms    @relation(name: "MessagesToRooms", fields: [roomId], references: [id])
+  roomId    Int
+  user      Users    @relation(name: "MessagesToUsers", fields: [userId], references: [id])
+  userId    Int
 }
 
 model Terms {
