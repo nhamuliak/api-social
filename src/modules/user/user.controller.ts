@@ -1,13 +1,30 @@
 import * as bcrypt from 'bcrypt';
-import { Controller, Body, Patch, Param, Res, HttpStatus, BadRequestException, Get, Query } from '@nestjs/common';
+import {
+    Controller,
+    Body,
+    Patch,
+    Param,
+    Res,
+    HttpStatus,
+    BadRequestException,
+    Get,
+    Query,
+    UseInterceptors,
+    UploadedFile
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Response } from 'express';
 import { FilterUserDto } from '@modules/user/dto/filter-user.dto';
+import { S3Service } from '@core/services/s3/s3.service';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('user')
 export class UserController {
-    constructor(private readonly userService: UserService) {}
+    constructor(
+        private readonly userService: UserService,
+        private readonly s3Service: S3Service
+    ) {}
 
     @Get()
     async getUsers(@Query() { firstName, lastName, page }: FilterUserDto, @Res() res: Response) {
@@ -24,7 +41,13 @@ export class UserController {
     }
 
     @Patch(':id')
-    async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Res() res: Response) {
+    @UseInterceptors(FileInterceptor('file'))
+    async update(
+        @Param('id') id: string,
+        @Body() updateUserDto: UpdateUserDto,
+        @UploadedFile() file: Express.Multer.File,
+        @Res() res: Response
+    ) {
         const user = await this.userService.getUserById(+id);
 
         if (!user) {
@@ -44,8 +67,10 @@ export class UserController {
             delete updateUserDto.password;
         }
 
-        if (updateUserDto.avatar) {
-            // TODO:: store in S3 bucket the image
+        if (file) {
+            const filePath = await this.s3Service.uploadFile(file);
+
+            updateUserDto.avatar = filePath;
         }
 
         const updatedUser = await this.userService.updateUserById(+id, updateUserDto);

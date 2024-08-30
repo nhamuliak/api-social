@@ -3,11 +3,10 @@ import { AuthModule } from '@modules/auth/auth.module';
 import { PrismaModule } from '@core/prisma/prisma.module';
 import { UserModule } from '@modules/user/user.module';
 import { TermsModule } from '@modules/terms/terms.module';
-import { ChatModule } from '@modules/chat/chat.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-    imports: [AuthModule, PrismaModule, UserModule, TermsModule, ChatModule],
-    controllers: [],
-    providers: []
+    imports: [ConfigModule.forRoot({ isGlobal: true }), AuthModule, PrismaModule, UserModule, TermsModule, ChatModule],
+    controllers: []
 })
 export class AppModule {}
