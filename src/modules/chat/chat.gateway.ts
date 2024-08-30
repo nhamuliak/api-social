@@ -4,24 +4,68 @@ import { ChatService } from './chat.service';
 // import { UpdateChatDto } from './dto/update-chat.dto';
 import { Socket } from 'socket.io';
 
+class CreateRoomDto {
+    user1Id: number;
+    user2Id: number;
+}
+
+class NewMessageDto {
+    userId: number;
+    roomId: number;
+    message: string;
+}
+
 @WebSocketGateway()
 export class ChatGateway {
-    // @WebSocketServer
-    // private server: Serv;
-
     constructor(private readonly chatService: ChatService) {}
 
-    @SubscribeMessage('event')
-    handleEvent(@MessageBody() text: string): string {
-        console.log('event: ', text);
-        return `from event:  ${text}`;
+    @SubscribeMessage('createRoom')
+    public async handleCreateRoom(
+        @MessageBody() { user1Id, user2Id }: CreateRoomDto,
+        @ConnectedSocket() socket: Socket
+    ): Promise<void> {
+        const room = await this.chatService.createRoom(+user1Id, +user2Id);
+
+        socket.emit('createRoom', room);
     }
 
-    @SubscribeMessage('message')
-    handleMessage(@MessageBody() data: any, @ConnectedSocket() client: Socket) {
-        console.log('from event "message": ', data);
-        // return `from message:  ${text}`;
-        client.to(data.roomId).emit(data.message);
+    @SubscribeMessage('getRoomByUserId')
+    public async handleGetRoomByUserId(
+        @MessageBody() userId: string,
+        @ConnectedSocket() socket: Socket
+    ): Promise<void> {
+        const rooms = await this.chatService.getRoomsByUserId(+userId);
+
+        socket.emit('getRooms', rooms);
+    }
+
+    @SubscribeMessage('getMessagesByRoomId')
+    public async handleGetMessagesByRoomId(
+        @MessageBody() roomId: number,
+        @ConnectedSocket() socket: Socket
+    ): Promise<void> {
+        const messages = await this.chatService.getMessagesByRoomId(+roomId);
+
+        console.log('messages: ', messages);
+        socket.emit('getMessages', messages);
+    }
+
+    @SubscribeMessage('newMessage')
+    public async handleNewMessage(
+        @MessageBody() { userId, roomId, message }: NewMessageDto,
+        @ConnectedSocket() socket: Socket
+    ): Promise<void> {
+        const newMessage = await this.chatService.saveMessage(+userId, +roomId, message);
+        console.log('from event "message": ', newMessage);
+
+        socket.to(roomId.toString()).emit('newMessage', newMessage);
+    }
+
+    @SubscribeMessage('messageRead')
+    public async handleMessageRead(@MessageBody() messageId: number, @ConnectedSocket() socket: Socket): Promise<void> {
+        const message = await this.chatService.updateMessageReadStatus(messageId);
+
+        socket.to(message.roomId).emit('messageRead', message);
     }
 
     // @SubscribeMessage('createChat')
