@@ -22,9 +22,9 @@ export async function getTokens(payload: PayloadModel): Promise<TokenModel> {
     };
 }
 
-export async function getAccessToken(payload: PayloadModel): Promise<string> {
+export async function getAccessToken(payload: PayloadModel, expiresIn: string = '60s'): Promise<string> {
     return await jwtService.signAsync(payload, {
-        expiresIn: '60s', // TODO:: change it to min "30m"
+        expiresIn,
         secret: ACCESS_TOKEN_KEY
     });
 }
@@ -33,5 +33,11 @@ export async function getRefreshToken(payload: PayloadModel): Promise<string> {
     return await jwtService.signAsync(payload, {
         expiresIn: '3d',
         secret: REFRESH_TOKEN_KEY
+    });
+}
+
+export async function verifyToken(token: string): Promise<any> {
+    return jwtService.verify(token, {
+        secret: ACCESS_TOKEN_KEY
     });
 }

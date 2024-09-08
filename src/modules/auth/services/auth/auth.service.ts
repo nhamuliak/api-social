@@ -1,15 +1,17 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { UserService } from '@modules/user/user.service';
-import { compareProperties, hashProperty, getTokens } from '@utils/helper';
+import { compareProperties, hashProperty, getTokens, getAccessToken, verifyToken } from '@utils/helper';
 import { TokenModel, UserModel, PayloadModel } from '@models/index';
 import { LoginAuthDto, RegistrationAuthDto } from '../../dto';
 import { TokenService } from '@modules/auth/services/token/token.service';
+import { MailService } from '@modules/auth/services/mail/mail.service';
 
 @Injectable()
 export class AuthService {
     constructor(
         private readonly userService: UserService,
-        private readonly tokenService: TokenService
+        private readonly tokenService: TokenService,
+        private readonly mailService: MailService
     ) {}
 
     public async registration(registrationAuthDto: RegistrationAuthDto): Promise<void> {
@@ -77,6 +79,33 @@ export class AuthService {
         await this.tokenService.storeRefreshToken(user.id, refreshTokenHash);
 
         return tokens;
+    }
+
+    public async recoverPassword(email: string): Promise<void> {
+        const user = await this.userService.getUserByEmail(email);
+
+        if (!user) {
+            throw new BadRequestException('User not found.');
+        }
+
+        const payload: PayloadModel = this.getPayload(user);
+        const token = await getAccessToken(payload);
+        const name = `${user.firstName} ${user.lastName}`;
+
+        await this.mailService.sendResetPassword(email, name, token);
+    }
+
+    public async resetPassword(token: string, password: string): Promise<void> {
+        const payload = await verifyToken(token);
+        const user = await this.userService.getUserById(payload.id);
+
+        if (!user) {
+            throw new BadRequestException('User not found.');
+        }
+
+        const hashedPassword = await hashProperty(password);
+
+        await this.userService.updateUserById(user.id, { password: hashedPassword });
     }
 
     private getPayload(user: UserModel): PayloadModel {
