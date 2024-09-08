@@ -23,7 +23,7 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
                 tls: {}
             },
             defaults: {
-                from: '"No Reply" <noreply@example.com>'
+                from: '"Fancy Chat App" <fancy@chat.com>'
             },
             template: {
                 dir: join(__dirname, '../src/templates'),
