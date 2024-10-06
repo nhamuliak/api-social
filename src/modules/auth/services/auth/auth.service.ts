@@ -31,7 +31,7 @@ export class AuthService {
         await this.userService.createUser(registrationAuthDto);
     }
 
-    public async login(loginAuthDto: LoginAuthDto): Promise<TokenModel> {
+    public async login(loginAuthDto: LoginAuthDto): Promise<{ tokens: TokenModel; user: PayloadModel }> {
         const user = await this.userService.getUserByEmail(loginAuthDto.email);
 
         if (!user) {
@@ -50,7 +50,7 @@ export class AuthService {
 
         await this.tokenService.storeRefreshToken(user.id, refreshTokenHash);
 
-        return tokens;
+        return { tokens, user: payload };
     }
 
     public async logout(userId: number): Promise<void> {
@@ -114,7 +114,9 @@ export class AuthService {
             email: user.email,
             firstName: user.firstName,
             lastName: user.lastName,
-            isOnline: user.isOnline
+            isOnline: user.isOnline,
+            age: user.age,
+            avatar: user.avatar
         };
     }
 }
