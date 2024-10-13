@@ -43,9 +43,25 @@ export class AuthController {
         @User() { id: userId, refreshToken }: RefreshPayloadModel,
         @Res() res: Response
     ): Promise<Response<TokenModel>> {
-        console.log('user: ', userId, refreshToken);
         const tokens = await this.authService.refresh(userId, refreshToken);
 
         return res.status(HttpStatus.OK).send(tokens);
+    }
+
+    @Post('recover-password')
+    public async recoverPassword(@Body('email') email: string, @Res() res: Response): Promise<Response<string>> {
+        await this.authService.recoverPassword(email);
+
+        return res.status(HttpStatus.OK).send('Please check your email.');
+    }
+
+    @Post('reset-password')
+    public async resetPassword(
+        @Body() { token, password }: { token: string; password: string },
+        @Res() res: Response
+    ): Promise<Response<string>> {
+        await this.authService.resetPassword(token, password);
+
+        return res.status(HttpStatus.OK).send('Your password was updated successfully.');
     }
 }

@@ -10,7 +10,9 @@ import {
     Get,
     Query,
     UseInterceptors,
-    UploadedFile
+    UploadedFile,
+    ForbiddenException,
+    UseGuards
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -18,6 +20,8 @@ import { Response } from 'express';
 import { FilterUserDto } from '@modules/user/dto/filter-user.dto';
 import { S3Service } from '@core/services/s3/s3.service';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { User } from '@core/decorators';
+import { AccessGuard } from '@core/guards/access/access.guard';
 
 @Controller('user')
 export class UserController {
@@ -40,15 +44,21 @@ export class UserController {
         }
     }
 
+    @UseGuards(AccessGuard)
     @Patch(':id')
     @UseInterceptors(FileInterceptor('file'))
     async update(
         @Param('id') id: string,
         @Body() updateUserDto: UpdateUserDto,
         @UploadedFile() file: Express.Multer.File,
-        @Res() res: Response
+        @Res() res: Response,
+        @User('id') userId: number
     ) {
         const user = await this.userService.getUserById(+id);
+
+        if (userId !== user.id) {
+            throw new ForbiddenException('You cannot update user with id ' + user.id);
+        }
 
         if (!user) {
             throw new BadRequestException('The user has not found.');
