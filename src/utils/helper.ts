@@ -17,7 +17,7 @@ export async function hashProperty(property: string): Promise<string> {
 
 export async function getTokens(payload: PayloadModel): Promise<TokenModel> {
     return {
-        accessToken: await getAccessToken(payload),
+        accessToken: await getAccessToken(payload, '1d'),
         refreshToken: await getRefreshToken(payload)
     };
 }

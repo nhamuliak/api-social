@@ -1,135 +1,166 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@core/prisma/prisma.service';
+import { PrismaService } from '@modules/prisma/prisma.service';
 
 @Injectable()
 export class ChatService {
     constructor(private readonly prismaService: PrismaService) {}
 
-    public createRoom(user1Id: number, user2Id: number): Promise<any> {
-        return this.prismaService.$transaction(async prisma => {
-            const room = await prisma.rooms.create({ data: {} });
-
-            await prisma.roomUsers.createMany({
-                data: [
-                    { roomId: room.id, userId: user1Id },
-                    { roomId: room.id, userId: user2Id }
-                ],
-                skipDuplicates: true // This will ignore duplicates if the relationship already exists
-            });
-
-            return room;
+    public async getConversationById(id: number): Promise<any> {
+        return this.prismaService.rooms.findUnique({
+            where: {
+                id: id
+            }
         });
     }
 
-    public getRoomsByUserId(userId: number): Promise<any[]> {
-        // return this.prismaService.$queryRaw`
-        //     SELECT * FROM roomUsers WHERE userId = ${userId}
-        // `;
-
-        return this.prismaService.roomUsers.findMany({
+    public async getConversationsByUserId(userId: number): Promise<any[]> {
+        const result = await this.prismaService.roomUsers.findMany({
             where: {
-                userId: userId
+                userId,
+                room: {
+                    // filter: show rooms only where there is at least one message
+                    messages: {
+                        some: {}
+                    }
+                }
             },
             include: {
                 room: {
-                    select: {
+                    include: {
                         messages: {
-                            take: 1,
-                            orderBy: { createdAt: 'desc' }
+                            select: {
+                                id: true,
+                                text: true,
+                                isRead: true,
+                                createdAt: true
+                            },
+                            orderBy: {
+                                createdAt: 'desc'
+                            },
+                            take: 1
                         }
                     }
                 }
             }
         });
 
-        // const rooms = await this.prismaService.$queryRaw`
-        //     SELECT
-        //       r.id AS roomId,
-        //       r.createdAt AS roomCreatedAt,
-        //       m.id AS messageId,
-        //       m.text AS messageText,
-        //       m.createdAt AS messageCreatedAt,
-        //       u.id AS userId,
-        //       u.username AS userUsername
-        //     FROM
-        //       Rooms r
-        //     JOIN
-        //       RoomUsers ru ON r.id = ru.roomId
-        //     LEFT JOIN
-        //       Messages m ON r.id = m.roomId
-        //     LEFT JOIN
-        //       Users u ON m.userId = u.id
-        //     WHERE
-        //       ru.userId = ${userId}
-        //       AND m.id = (
-        //         SELECT id
-        //         FROM Messages
-        //         WHERE roomId = r.id
-        //         ORDER BY createdAt DESC
-        //         LIMIT 1
-        //       )
-        //     ORDER BY
-        //       r.createdAt DESC;
-        //   `;
+        // mapping data for response
+        return Promise.all(
+            result.map(async data => {
+                const room = await this.getUserByRoom(data.roomId, userId);
+
+                return {
+                    id: data.id,
+                    roomId: data.roomId,
+                    message: data.room.messages[0],
+                    user: room.user
+                };
+            })
+        );
     }
 
-    public getMessagesByRoomId(roomId: number): Promise<any[]> {
-        // return this.prismaService.$queryRaw`
-        //     SELECT * FROM messages
-        //     WHERE roomId = ${roomId}
-        //     ORDER BY created_at ASC
-        // `;
-
-        return this.prismaService.messages.findMany({
+    public async getConversationByUserId(userId: number): Promise<any> {
+        return this.prismaService.roomUsers.findFirst({
             where: {
-                roomId: roomId
-            },
-            orderBy: { createdAt: 'desc' }
+                userId
+            }
         });
     }
 
-    public saveMessage(userId: number, roomId: number, message: string): Promise<any> {
-        // return this.prismaService.$queryRaw`
-        //     INSERT INTO messages (user_id, room_id, text) VALUES (${userId}, ${roomId}, ${message}) RETURNING *
-        // `;
+    public async createConversation(senderId: number, receiverId: number): Promise<number> {
+        const { id: conversationId } = await this.prismaService.rooms.create({
+            data: {},
+            select: { id: true }
+        });
+
+        await this.prismaService.roomUsers.createMany({
+            data: [
+                {
+                    roomId: conversationId,
+                    userId: senderId
+                },
+                {
+                    roomId: conversationId,
+                    userId: receiverId
+                }
+            ]
+        });
+
+        return conversationId;
+    }
+
+    public async getMessagesByRoomId(conversationId: number): Promise<any> {
+        return this.prismaService.messages.findMany({
+            where: {
+                roomId: conversationId
+            },
+            include: {
+                user: {
+                    select: this.userMapping
+                }
+            }
+        });
+    }
+
+    public async createMessage(userId: number, roomId: number, content: string): Promise<any> {
         return this.prismaService.messages.create({
             data: {
                 userId,
                 roomId,
-                text: message
-            }
-        });
-    }
-
-    public updateMessageReadStatus(messageId: number): Promise<any> {
-        return this.prismaService.messages.update({
-            where: {
-                id: messageId
+                text: content
             },
-            data: {
-                isRead: true
+            include: {
+                user: {
+                    select: this.userMapping
+                }
             }
         });
     }
 
-    // public async create(createChatDto: CreateChatDto): Promise<void> {
-    //     await this.prismaService.messages.create({
-    //         data: {
-    //             text: createChatDto.text,
-    //             conversationId: createChatDto.conversationId,
-    //             userId: createChatDto.userId
-    //         }
-    //     });
-    // }
-    //
-    // public async findAll(conversationId: number) {
-    //     await this.prismaService.conversations.findFirst({
-    //         where: {
-    //             id: conversationId
-    //         },
-    //         select: {
-    //             messages: true
-    //         }
-    //     });
-    // }
+    public async getReceiverByRoomId(roomId: number, currentUserId: number): Promise<any> {
+        const result = await this.prismaService.roomUsers.findFirst({
+            where: {
+                roomId: roomId,
+                userId: {
+                    not: currentUserId
+                }
+            },
+            include: {
+                user: {
+                    select: this.userMapping
+                }
+            }
+        });
+
+        return result.user;
+    }
+
+    // Private Methods
+
+    private async getUserByRoom(roomId: number, userId: number): Promise<any> {
+        return this.prismaService.roomUsers.findFirst({
+            where: {
+                roomId: roomId,
+                userId: {
+                    not: userId
+                }
+            },
+            include: {
+                user: {
+                    select: this.userMapping
+                }
+            }
+        });
+    }
+
+    private get userMapping(): { [key: string]: boolean } {
+        return {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatar: true,
+            isOnline: true,
+            createdAt: true
+        };
+    }
 }
