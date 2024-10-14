@@ -20,6 +20,8 @@ model Users {
   isOnline    Boolean      @default(false)
   createdAt   DateTime     @default(now())
   tokens      UserTokens[] @relation(name: "UserTokensToUsers")
+  messages    Messages[]   @relation(name: "MessagesToUsers")
+  roomUsers   RoomUsers[]  @relation(name: "RoomUsersToUsers")
 }
 
 model UserTokens {
@@ -28,6 +30,35 @@ model UserTokens {
   user             Users    @relation(name: "UserTokensToUsers", fields: [userId], references: [id])
   userId           Int
   createdAt        DateTime @default(now())
+}
+
+model RoomUsers {
+  id     Int   @id @default(autoincrement())
+  room   Rooms @relation(name: "RoomUsersToRooms", fields: [roomId], references: [id])
+  roomId Int
+  user   Users @relation(name: "RoomUsersToUsers", fields: [userId], references: [id])
+  userId Int
+
+  @@index([roomId])
+  @@index([userId])
+}
+
+model Rooms {
+  id        Int         @id @default(autoincrement())
+  createdAt DateTime    @default(now())
+  messages  Messages[]  @relation(name: "MessagesToRooms")
+  roomUsers RoomUsers[] @relation(name: "RoomUsersToRooms")
+}
+
+model Messages {
+  id        Int      @id @default(autoincrement())
+  text      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  room      Rooms    @relation(name: "MessagesToRooms", fields: [roomId], references: [id])
+  roomId    Int
+  user      Users    @relation(name: "MessagesToUsers", fields: [userId], references: [id])
+  userId    Int
 }
 
 model Terms {

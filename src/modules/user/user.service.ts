@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@core/prisma/prisma.service';
+import { PrismaService } from '@modules/prisma/prisma.service';
 import { UpdateUserDto } from '@modules/user/dto/update-user.dto';
 import { UserModel } from '@models/index';
 import { RegistrationAuthDto } from '@modules/auth/dto';
@@ -8,7 +8,12 @@ import { RegistrationAuthDto } from '@modules/auth/dto';
 export class UserService {
     constructor(private prismaService: PrismaService) {}
 
-    public async getUsers(firstName: string, lastName: string, page: number, limit: number = 20): Promise<any> {
+    public async getUsers(
+        firstName: string = '',
+        lastName: string = '',
+        page: number = 1,
+        limit: number = 20
+    ): Promise<any> {
         return this.prismaService.$transaction([
             this.prismaService.users.count(),
             this.prismaService.users.findMany({

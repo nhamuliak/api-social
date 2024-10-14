@@ -10,6 +10,8 @@ model Users {
   isOnline Boolean @default(false)
   createdAt DateTime @default(now())
   tokens UserTokens[]
+  messages Messages[]
+  roomUsers RoomUsers[]
   // resetPasswordHashes ResetPasswordHashes[]
 }
 
@@ -21,6 +23,35 @@ model UserTokens {
   createdAt DateTime @default(now())
 }
 
+model RoomUsers {
+  id Int @id @default(autoincrement())
+  room Rooms @relation(fields: [roomId], references: [id])
+  roomId Int
+  user Users @relation(fields: [userId], references: [id])
+  userId Int
+
+  @@index([roomId])
+  @@index([userId])
+}
+
+model Rooms {
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  messages Messages[]
+  roomUsers RoomUsers[]
+}
+
+model Messages {
+  id Int @id @default(autoincrement())
+  text String
+  isRead Boolean @default(false)
+  createdAt DateTime @default(now())
+  room Rooms @relation(fields: [roomId], references: [id])
+  roomId Int
+  user Users @relation(fields: [userId], references: [id])
+  userId Int
+}
+
 // model ResetPasswordHashes {
 //   hash String @id @default(uuid())
 //   used Boolean @default(false)
@@ -28,3 +59,4 @@ model UserTokens {
 //   userId Int
 //   createdAt DateTime @default(now())
 // }
+

@@ -31,7 +31,7 @@ export class AuthService {
         await this.userService.createUser(registrationAuthDto);
     }
 
-    public async login(loginAuthDto: LoginAuthDto): Promise<{ tokens: TokenModel; user: PayloadModel }> {
+    public async login(loginAuthDto: LoginAuthDto): Promise<TokenModel> {
         const user = await this.userService.getUserByEmail(loginAuthDto.email);
 
         if (!user) {
@@ -50,7 +50,7 @@ export class AuthService {
 
         await this.tokenService.storeRefreshToken(user.id, refreshTokenHash);
 
-        return { tokens, user: payload };
+        return tokens;
     }
 
     public async logout(userId: number): Promise<void> {

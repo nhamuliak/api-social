@@ -31,9 +31,11 @@ export class UserController {
     ) {}
 
     @Get()
-    async getUsers(@Query() { firstName, lastName, page }: FilterUserDto, @Res() res: Response) {
+    @UseGuards(AccessGuard)
+    async getUsers(@Res() res: Response) {
         try {
-            const [count, users] = await this.userService.getUsers(firstName, lastName, +page);
+            // @Query() { firstName, lastName, page }: FilterUserDto,
+            const [count, users] = await this.userService.getUsers();
 
             res.status(HttpStatus.OK).send({
                 count,

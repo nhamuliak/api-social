@@ -1,12 +1,13 @@
 import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { AuthModule } from '@modules/auth/auth.module';
-import { PrismaModule } from '@core/prisma/prisma.module';
+import { PrismaModule } from '@modules/prisma/prisma.module';
 import { UserModule } from '@modules/user/user.module';
 import { TermsModule } from '@modules/terms/terms.module';
 import { ConfigModule } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { ChatModule } from '@modules/chat/chat.module';
 
 @Module({
     imports: [
@@ -36,7 +37,8 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
         AuthModule,
         PrismaModule,
         UserModule,
-        TermsModule
+        TermsModule,
+        ChatModule
     ],
     controllers: []
 })
