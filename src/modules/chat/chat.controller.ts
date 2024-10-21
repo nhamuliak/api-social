@@ -16,13 +16,36 @@ export class ChatController {
         return res.status(HttpStatus.OK).send(conversations);
     }
 
+    @Get(':id/latest-conversations')
+    public async getLatestConversations(
+        @Param('id') paramId: number,
+        @User('id') userId: number,
+        @Res() res: Response
+    ): Promise<Response<any[]>> {
+        const id = Number(paramId);
+
+        const conversation = await this.chatService.getConversationById(id);
+
+        if (!conversation) {
+            throw new BadRequestException('The conversation was not found');
+        }
+
+        const latestConversations = await this.chatService.getLatestConversations(id, userId);
+
+        return res.status(HttpStatus.OK).send(latestConversations);
+    }
+
     @Post('')
     public async createConversation(
         @User('id') userId: number,
         @Body() { receiverId }: { receiverId: number },
         @Res() res: Response
     ): Promise<Response<{ conversationId: number }>> {
-        const conversation = await this.chatService.getConversationByUserId(receiverId);
+        if (receiverId === userId) {
+            throw new BadRequestException('Receiver user cannot be the sender');
+        }
+
+        const [conversation] = await this.chatService.getConversationByUserIds(userId, receiverId);
 
         console.log('conversation data: ', conversation);
         if (conversation) {
@@ -35,12 +58,11 @@ export class ChatController {
 
         console.log('conversation ID: ', conversationId);
 
-        return res.status(HttpStatus.OK).send({ conversationId: conversationId });
+        return res.status(HttpStatus.OK).send({ roomId: conversationId });
     }
 
     @Get(':id/messages')
     public async getMessagesByConversationId(
-        @User('id') userId: number,
         @Param('id') paramId: number,
         @Res() res: Response
     ): Promise<Response<any[]>> {
