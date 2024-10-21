@@ -27,6 +27,8 @@ import { User } from '@core/decorators';
 //     message: string;
 // }
 
+const messages = [];
+
 const userSocketMap = new Map();
 
 @WebSocketGateway({ namespace: 'chat', cors: { origin: true } })
@@ -223,6 +225,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private disconnect(socket: Socket) {
         socket.emit('error', new UnauthorizedException());
 
+        // userSocketMap.delete();
         socket.disconnect();
     }
 }

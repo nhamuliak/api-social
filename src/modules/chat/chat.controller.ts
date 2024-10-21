@@ -63,6 +63,7 @@ export class ChatController {
 
     @Get(':id/messages')
     public async getMessagesByConversationId(
+        @User('id') userId: number,
         @Param('id') paramId: number,
         @Res() res: Response
     ): Promise<Response<any[]>> {
