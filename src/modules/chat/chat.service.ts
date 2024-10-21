@@ -13,6 +13,81 @@ export class ChatService {
         });
     }
 
+    public async getLatestConversations(roomId: number, userId: number): Promise<any[]> {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+
+        const result = await this.prismaService.roomUsers.findMany({
+            where: {
+                userId: userId,
+                OR: [
+                    {
+                        roomId
+                        // room: {
+                        //     // filter: show rooms only where there is at least one message
+                        //     messages: {
+                        //         some: {
+                        //             roomId
+                        //         }
+                        //     }
+                        // }
+                    },
+                    {
+                        room: {
+                            // filter: show rooms only where there is at least one message
+                            messages: {
+                                some: {
+                                    createdAt: {
+                                        gte: weekAgo
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            include: {
+                room: {
+                    include: {
+                        messages: {
+                            select: {
+                                id: true,
+                                text: true,
+                                isRead: true,
+                                createdAt: true
+                            },
+                            orderBy: {
+                                createdAt: 'desc'
+                            },
+                            take: 1
+                        }
+                    }
+                }
+            }
+            // Pagination
+            // take: 10,
+            // skip: 1
+        });
+
+        // mapping data for response
+        return Promise.all(
+            result.map(async data => {
+                const room = await this.getUserByRoom(data.roomId, userId);
+
+                const unreadMessagesCount = await this.getUnreadMessagesByRoom(data.roomId, userId);
+                console.log('unreadMessagesCount: ', unreadMessagesCount);
+
+                return {
+                    id: data.id,
+                    roomId: data.roomId,
+                    message: data.room.messages[0] || {},
+                    user: room.user,
+                    unreadMessagesCount
+                };
+            })
+        );
+    }
+
     public async getConversationsByUserId(userId: number): Promise<any[]> {
         const result = await this.prismaService.roomUsers.findMany({
             where: {
@@ -49,20 +124,34 @@ export class ChatService {
             result.map(async data => {
                 const room = await this.getUserByRoom(data.roomId, userId);
 
+                const unreadMessagesCount = await this.getUnreadMessagesByRoom(data.roomId, userId);
+                console.log('unreadMessagesCount: ', unreadMessagesCount);
+
                 return {
                     id: data.id,
                     roomId: data.roomId,
                     message: data.room.messages[0],
-                    user: room.user
+                    user: room.user,
+                    unreadMessagesCount
                 };
             })
         );
     }
 
-    public async getConversationByUserId(userId: number): Promise<any> {
-        return this.prismaService.roomUsers.findFirst({
+    public async getConversationByUserIds(userId: number, receiverId: number): Promise<any> {
+        return this.prismaService.roomUsers.groupBy({
+            by: ['roomId'],
             where: {
-                userId
+                userId: {
+                    in: [userId, receiverId]
+                }
+            },
+            having: {
+                roomId: {
+                    _count: {
+                        equals: 2
+                    }
+                }
             }
         });
     }
@@ -98,6 +187,9 @@ export class ChatService {
                 user: {
                     select: this.userMapping
                 }
+            },
+            orderBy: {
+                createdAt: 'asc'
             }
         });
     }
@@ -113,6 +205,18 @@ export class ChatService {
                 user: {
                     select: this.userMapping
                 }
+            }
+        });
+    }
+
+    public async updateMessagesReadStatus(roomId: number, senderId: number): Promise<void> {
+        await this.prismaService.messages.updateMany({
+            where: {
+                roomId,
+                userId: senderId
+            },
+            data: {
+                isRead: true
             }
         });
     }
@@ -149,6 +253,18 @@ export class ChatService {
                 user: {
                     select: this.userMapping
                 }
+            }
+        });
+    }
+
+    public async getUnreadMessagesByRoom(roomId: number, userId: number): Promise<any> {
+        return this.prismaService.messages.count({
+            where: {
+                roomId: roomId,
+                userId: {
+                    not: userId
+                },
+                isRead: false
             }
         });
     }

@@ -4,10 +4,10 @@ import { ChatController } from './chat.controller';
 describe('ChatController', () => {
   let controller: ChatController;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [ChatController],
-    }).compile();
+    beforeEach(async () => {
+        const module: TestingModule = await Test.createTestingModule({
+            controllers: [ChatController]
+        }).compile();
 
     controller = module.get<ChatController>(ChatController);
   });

@@ -9,6 +9,7 @@ export class UserService {
     constructor(private prismaService: PrismaService) {}
 
     public async getUsers(
+        userId: number,
         firstName: string = '',
         lastName: string = '',
         page: number = 1,
@@ -20,6 +21,9 @@ export class UserService {
                 skip: page >= 0 ? (page - 1) * limit : 0,
                 take: limit,
                 where: {
+                    id: {
+                        not: userId
+                    },
                     firstName: {
                         contains: firstName ?? '',
                         mode: 'insensitive'
@@ -64,6 +68,17 @@ export class UserService {
                 id
             },
             data
+        });
+    }
+
+    public async updateUserOnlineStatusById(id: number, isOnline: boolean): Promise<any> {
+        return this.prismaService.users.update({
+            where: {
+                id
+            },
+            data: {
+                isOnline
+            }
         });
     }
 }
