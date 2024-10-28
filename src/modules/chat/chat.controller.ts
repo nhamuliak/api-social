@@ -1,16 +1,26 @@
 import { Response } from 'express';
-import { BadRequestException, Body, Controller, Get, HttpStatus, Param, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
 import { AccessGuard } from '@core/guards/access/access.guard';
 import { User } from '@core/decorators';
 import { ChatService } from '@modules/chat/chat.service';
+import { ChatGateway } from '@modules/chat/chat.gateway';
+import { PaginationModel } from '@models/pagination.model';
+import { ConversationPrismaModel, MessagePrismaModel } from '@business/models/chat-prisma.model';
+import { UserPrismaModel } from '@business/models';
 
 @UseGuards(AccessGuard)
 @Controller('chat')
 export class ChatController {
-    constructor(private readonly chatService: ChatService) {}
+    constructor(
+        private readonly chatService: ChatService,
+        private readonly chatGateway: ChatGateway
+    ) {}
 
     @Get('')
-    public async getConversations(@User('id') userId: number, @Res() res: Response): Promise<Response<any[]>> {
+    public async getConversations(
+        @User('id') userId: number,
+        @Res() res: Response
+    ): Promise<Response<ConversationPrismaModel[]>> {
         const conversations = await this.chatService.getConversationsByUserId(userId);
 
         return res.status(HttpStatus.OK).send(conversations);
@@ -18,19 +28,11 @@ export class ChatController {
 
     @Get(':id/latest-conversations')
     public async getLatestConversations(
-        @Param('id') paramId: number,
+        @Param('id') id: number,
         @User('id') userId: number,
         @Res() res: Response
-    ): Promise<Response<any[]>> {
-        const id = Number(paramId);
-
-        const conversation = await this.chatService.getConversationById(id);
-
-        if (!conversation) {
-            throw new BadRequestException('The conversation was not found');
-        }
-
-        const latestConversations = await this.chatService.getLatestConversations(id, userId);
+    ): Promise<Response<ConversationPrismaModel[]>> {
+        const latestConversations = await this.chatService.getLatestConversations(+id, userId);
 
         return res.status(HttpStatus.OK).send(latestConversations);
     }
@@ -41,58 +43,44 @@ export class ChatController {
         @Body() { receiverId }: { receiverId: number },
         @Res() res: Response
     ): Promise<Response<{ conversationId: number }>> {
-        if (receiverId === userId) {
-            throw new BadRequestException('Receiver user cannot be the sender');
-        }
-
-        const [conversation] = await this.chatService.getConversationByUserIds(userId, receiverId);
-
-        console.log('conversation data: ', conversation);
-        if (conversation) {
-            console.log('if Conversation:', conversation);
-            return res.status(HttpStatus.OK).send(conversation);
-        }
-
-        // Create a new conversation
-        const conversationId = await this.chatService.createConversation(userId, receiverId);
-
-        console.log('conversation ID: ', conversationId);
+        const conversationId = await this.chatService.createConversation(userId, receiverId, res);
 
         return res.status(HttpStatus.OK).send({ roomId: conversationId });
     }
 
+    @Delete(':id')
+    public async deleteConversationByRoomId(
+        @Param('id') roomId: number,
+        @Body() { receiverId }: { receiverId: number },
+        @Res() res: Response
+    ): Promise<Response<void>> {
+        await this.chatService.deleteConversationByRoomId(+roomId);
+
+        this.chatGateway.notifyRoomDeleted(+roomId, +receiverId);
+
+        return res.status(HttpStatus.NO_CONTENT).send();
+    }
+
     @Get(':id/messages')
     public async getMessagesByConversationId(
-        @User('id') userId: number,
-        @Param('id') paramId: number,
+        @Param('id') id: number,
+        @Query() { page, size }: { page: number; size: number },
         @Res() res: Response
-    ): Promise<Response<any[]>> {
-        const id = Number(paramId);
+    ): Promise<Response<PaginationModel<MessagePrismaModel>>> {
+        const result = await this.chatService.getMessagesByConversationId(+id, +page, +size);
 
-        const conversation = await this.chatService.getConversationById(id);
-
-        if (!conversation) {
-            throw new BadRequestException('The conversation was not found');
-        }
-
-        const conversations = await this.chatService.getMessagesByRoomId(id);
-
-        return res.status(HttpStatus.OK).send(conversations);
+        return res.status(HttpStatus.OK).send(result);
     }
 
     @Post('messages')
     public async createMessage(
         @User('id') userId: number,
-        @Body() { roomId, content }: any,
+        @Body() { roomId, receiverId, content }: any,
         @Res() res: Response
-    ): Promise<Response<any>> {
-        const conversation = await this.chatService.getConversationById(roomId);
+    ): Promise<Response<MessagePrismaModel>> {
+        const message = await this.chatService.sendMessage(roomId, userId, receiverId, content);
 
-        if (!conversation) {
-            throw new BadRequestException('The conversation was not found');
-        }
-
-        const message = await this.chatService.createMessage(userId, roomId, content);
+        this.chatGateway.notifyCreatedMessage(receiverId, message);
 
         return res.status(HttpStatus.OK).send(message);
     }
@@ -102,7 +90,7 @@ export class ChatController {
         @User('id') userId: number,
         @Param('id') roomId: number,
         @Res() res: Response
-    ): Promise<Response<any>> {
+    ): Promise<Response<UserPrismaModel>> {
         const receiver = await this.chatService.getReceiverByRoomId(+roomId, +userId);
 
         return res.status(HttpStatus.OK).send(receiver);

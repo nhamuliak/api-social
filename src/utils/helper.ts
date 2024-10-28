@@ -6,7 +6,13 @@ import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@utils/constants';
 const jwtService = new JwtService();
 
 export async function compareProperties(property: string, hash: string): Promise<boolean> {
-    return await bcrypt.compare(property, hash);
+    try {
+        return await bcrypt.compare(property, hash);
+    } catch (err) {
+        console.error(err);
+
+        return null;
+    }
 }
 
 export async function hashProperty(property: string): Promise<string> {
@@ -36,7 +42,7 @@ export async function getRefreshToken(payload: PayloadModel): Promise<string> {
     });
 }
 
-export async function verifyToken(token: string): Promise<any> {
+export async function verifyToken(token: string): Promise<PayloadModel> {
     return jwtService.verify(token, {
         secret: ACCESS_TOKEN_KEY
     });

@@ -1,4 +1,4 @@
-export interface UserModel {
+export interface UserPrismaModel {
     id: number;
     email: string;
     firstName: string;
@@ -7,4 +7,9 @@ export interface UserModel {
     avatar: string;
     isOnline: boolean;
     createdAt: Date;
+}
+
+export interface FullUserPrismaModel extends UserPrismaModel {
+    password: string;
+    acceptTerms: boolean;
 }

@@ -1,84 +1,58 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@modules/prisma/prisma.service';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { UserPrismaService } from '@business/services/user-prisma/user-prisma.service';
+import * as bcrypt from 'bcrypt';
 import { UpdateUserDto } from '@modules/user/dto/update-user.dto';
-import { UserModel } from '@models/index';
-import { RegistrationAuthDto } from '@modules/auth/dto';
+import { S3Service } from '@core/services/s3/s3.service';
+import { PaginationModel, UserPrismaModel } from '@business/models';
 
 @Injectable()
 export class UserService {
-    constructor(private prismaService: PrismaService) {}
+    constructor(
+        private readonly userPrismaService: UserPrismaService,
+        private readonly s3Service: S3Service
+    ) {}
 
-    public async getUsers(
+    public async getUsers(userId: number): Promise<PaginationModel<UserPrismaModel>> {
+        return await this.userPrismaService.getUsers(userId);
+    }
+
+    public async updateUser(
         userId: number,
-        firstName: string = '',
-        lastName: string = '',
-        page: number = 1,
-        limit: number = 20
-    ): Promise<any> {
-        return this.prismaService.$transaction([
-            this.prismaService.users.count(),
-            this.prismaService.users.findMany({
-                skip: page >= 0 ? (page - 1) * limit : 0,
-                take: limit,
-                where: {
-                    id: {
-                        not: userId
-                    },
-                    firstName: {
-                        contains: firstName ?? '',
-                        mode: 'insensitive'
-                    },
-                    lastName: {
-                        contains: lastName ?? '',
-                        mode: 'insensitive'
-                    }
-                },
-                orderBy: {
-                    firstName: 'desc'
-                }
-            })
-        ]);
-    }
+        currentUserId: number,
+        updateUserDto: UpdateUserDto,
+        file: Express.Multer.File = null
+    ): Promise<UserPrismaModel> {
+        const user = await this.userPrismaService.getFullUserByEmailOrId(userId);
 
-    public async getUserByEmail(email: string): Promise<UserModel> {
-        return this.prismaService.users.findUnique({
-            where: {
-                email
+        if (!user) {
+            throw new BadRequestException('The user has not found.');
+        }
+
+        if (currentUserId !== user.id) {
+            throw new ForbiddenException("You cannot update stranger's profile.");
+        }
+
+        if (updateUserDto.oldPassword && updateUserDto.password) {
+            const isMatch = await bcrypt.compare(user.password, updateUserDto.oldPassword);
+
+            if (!isMatch) {
+                throw new BadRequestException('The old password is not correct.');
             }
-        });
-    }
 
-    public async getUserById(id: number): Promise<any> {
-        return this.prismaService.users.findUnique({
-            where: {
-                id
-            }
-        });
-    }
+            updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+        } else {
+            delete updateUserDto.oldPassword;
+            delete updateUserDto.password;
+        }
 
-    public async createUser(registrationAuthDto: RegistrationAuthDto): Promise<UserModel> {
-        return this.prismaService.users.create({
-            data: Object.assign(registrationAuthDto)
-        });
-    }
+        if (file) {
+            const filePath = await this.s3Service.uploadFile(file);
 
-    public async updateUserById(id: number, data: UpdateUserDto): Promise<any> {
-        return this.prismaService.users.update({
-            where: {
-                id
-            },
-            data
-        });
-    }
+            updateUserDto.avatar = filePath;
+        }
 
-    public async updateUserOnlineStatusById(id: number, isOnline: boolean): Promise<any> {
-        return this.prismaService.users.update({
-            where: {
-                id
-            },
-            data: {
-                isOnline
-            }
-        });
+        const updatedUser = await this.userPrismaService.updateUserById(userId, updateUserDto);
+
+        return updatedUser;
     }
 }

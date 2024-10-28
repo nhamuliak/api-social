@@ -1,282 +1,124 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@modules/prisma/prisma.service';
+import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import { ChatPrismaService } from '@business/services/chat-prisma/chat-prisma.service';
+import { ConversationPrismaModel, MessagePrismaModel } from '@business/models/chat-prisma.model';
+import { UserPrismaService } from '@business/services/user-prisma/user-prisma.service';
+import { Response } from 'express';
+import { PaginationModel } from '@models/pagination.model';
+import { UserPrismaModel } from '@business/models';
 
 @Injectable()
 export class ChatService {
-    constructor(private readonly prismaService: PrismaService) {}
+    constructor(
+        private readonly chatPrismaService: ChatPrismaService,
+        private readonly userPrismaService: UserPrismaService
+    ) {}
 
-    public async getConversationById(id: number): Promise<any> {
-        return this.prismaService.rooms.findUnique({
-            where: {
-                id: id
-            }
-        });
+    public async getConversationsByUserId(userId: number): Promise<ConversationPrismaModel | unknown> {
+        return this.chatPrismaService.getConversationsByUserId(userId);
     }
 
-    public async getLatestConversations(roomId: number, userId: number): Promise<any[]> {
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
+    public async getLatestConversations(id: number, userId: number): Promise<ConversationPrismaModel | unknown> {
+        const conversation = await this.chatPrismaService.getConversationById(id);
 
-        const result = await this.prismaService.roomUsers.findMany({
-            where: {
-                userId: userId,
-                OR: [
-                    {
-                        roomId
-                        // room: {
-                        //     // filter: show rooms only where there is at least one message
-                        //     messages: {
-                        //         some: {
-                        //             roomId
-                        //         }
-                        //     }
-                        // }
-                    },
-                    {
-                        room: {
-                            // filter: show rooms only where there is at least one message
-                            messages: {
-                                some: {
-                                    createdAt: {
-                                        gte: weekAgo
-                                    }
-                                }
-                            }
-                        }
-                    }
-                ]
-            },
-            include: {
-                room: {
-                    include: {
-                        messages: {
-                            select: {
-                                id: true,
-                                text: true,
-                                isRead: true,
-                                createdAt: true
-                            },
-                            orderBy: {
-                                createdAt: 'desc'
-                            },
-                            take: 1
-                        }
-                    }
-                }
-            }
-            // Pagination
-            // take: 10,
-            // skip: 1
-        });
+        if (!conversation) {
+            throw new BadRequestException('The conversation was not found');
+        }
 
-        // mapping data for response
-        return Promise.all(
-            result.map(async data => {
-                const room = await this.getUserByRoom(data.roomId, userId);
-
-                const unreadMessagesCount = await this.getUnreadMessagesByRoom(data.roomId, userId);
-                console.log('unreadMessagesCount: ', unreadMessagesCount);
-
-                return {
-                    id: data.id,
-                    roomId: data.roomId,
-                    message: data.room.messages[0] || {},
-                    user: room.user,
-                    unreadMessagesCount
-                };
-            })
-        );
+        return this.chatPrismaService.getLatestConversations(id, userId);
     }
 
-    public async getConversationsByUserId(userId: number): Promise<any[]> {
-        const result = await this.prismaService.roomUsers.findMany({
-            where: {
-                userId,
-                room: {
-                    // filter: show rooms only where there is at least one message
-                    messages: {
-                        some: {}
-                    }
-                }
-            },
-            include: {
-                room: {
-                    include: {
-                        messages: {
-                            select: {
-                                id: true,
-                                text: true,
-                                isRead: true,
-                                createdAt: true
-                            },
-                            orderBy: {
-                                createdAt: 'desc'
-                            },
-                            take: 1
-                        }
-                    }
-                }
-            }
-        });
+    public async createConversation(userId: number, receiverId: number, res: Response): Promise<number> {
+        if (receiverId === userId) {
+            throw new BadRequestException('Receiver user cannot be the sender');
+        }
 
-        // mapping data for response
-        return Promise.all(
-            result.map(async data => {
-                const room = await this.getUserByRoom(data.roomId, userId);
+        const conversation = await this.chatPrismaService.getConversationByUserIds(userId, receiverId);
 
-                const unreadMessagesCount = await this.getUnreadMessagesByRoom(data.roomId, userId);
-                console.log('unreadMessagesCount: ', unreadMessagesCount);
+        if (conversation) {
+            res.status(HttpStatus.OK).send(conversation);
 
-                return {
-                    id: data.id,
-                    roomId: data.roomId,
-                    message: data.room.messages[0],
-                    user: room.user,
-                    unreadMessagesCount
-                };
-            })
-        );
+            return;
+        }
+
+        // Create a new conversation
+        return await this.chatPrismaService.createConversation(userId, receiverId);
     }
 
-    public async getConversationByUserIds(userId: number, receiverId: number): Promise<any> {
-        return this.prismaService.roomUsers.groupBy({
-            by: ['roomId'],
-            where: {
-                userId: {
-                    in: [userId, receiverId]
-                }
-            },
-            having: {
-                roomId: {
-                    _count: {
-                        equals: 2
-                    }
-                }
-            }
-        });
+    public async deleteConversationByRoomId(roomId: number): Promise<void> {
+        const room = await this.chatPrismaService.getConversationById(roomId);
+
+        if (!room) {
+            throw new BadRequestException('The conversation was not found');
+        }
+
+        await this.chatPrismaService.deleteConversationByRoomId(roomId);
     }
 
-    public async createConversation(senderId: number, receiverId: number): Promise<number> {
-        const { id: conversationId } = await this.prismaService.rooms.create({
-            data: {},
-            select: { id: true }
-        });
+    public async getMessagesByConversationId(
+        id: number,
+        page: number,
+        size: number
+    ): Promise<PaginationModel<MessagePrismaModel>> {
+        const conversation = await this.chatPrismaService.getConversationById(id);
 
-        await this.prismaService.roomUsers.createMany({
-            data: [
-                {
-                    roomId: conversationId,
-                    userId: senderId
-                },
-                {
-                    roomId: conversationId,
-                    userId: receiverId
-                }
-            ]
-        });
+        if (!conversation) {
+            throw new BadRequestException('The conversation was not found');
+        }
 
-        return conversationId;
+        const result = await this.chatPrismaService.getMessagesByRoomId(id, page, size);
+
+        return result;
     }
 
-    public async getMessagesByRoomId(conversationId: number): Promise<any> {
-        return this.prismaService.messages.findMany({
-            where: {
-                roomId: conversationId
-            },
-            include: {
-                user: {
-                    select: this.userMapping
-                }
-            },
-            orderBy: {
-                createdAt: 'asc'
-            }
-        });
-    }
+    public async sendMessage(
+        roomId: number,
+        senderId: number,
+        receiverId: number,
+        content: string
+    ): Promise<ConversationPrismaModel> {
+        const conversationId = await this.chatPrismaService.getConversationById(roomId);
 
-    public async createMessage(userId: number, roomId: number, content: string): Promise<any> {
-        return this.prismaService.messages.create({
-            data: {
-                userId,
-                roomId,
-                text: content
-            },
-            include: {
-                user: {
-                    select: this.userMapping
-                }
-            }
-        });
+        if (!conversationId) {
+            throw new BadRequestException('The conversation was not found');
+        }
+
+        const message = await this.chatPrismaService.createMessage(senderId, roomId, content);
+
+        const unreadMessagesCount = await this.chatPrismaService.getUnreadMessagesByRoom(roomId, receiverId);
+        const user = await this.userPrismaService.getUserById(senderId);
+
+        return {
+            id: conversationId,
+            roomId,
+            message,
+            user,
+            unreadMessagesCount
+        };
     }
 
     public async updateMessagesReadStatus(roomId: number, senderId: number): Promise<void> {
-        await this.prismaService.messages.updateMany({
-            where: {
-                roomId,
-                userId: senderId
-            },
-            data: {
-                isRead: true
-            }
-        });
+        const sender = await this.userPrismaService.getUserById(senderId);
+
+        if (!sender) {
+            throw new BadRequestException('The sender was not found');
+        }
+
+        const room = await this.chatPrismaService.getConversationById(roomId);
+
+        if (!room) {
+            throw new BadRequestException('The room was not found');
+        }
+
+        await this.chatPrismaService.updateMessagesReadStatus(roomId, senderId);
     }
 
-    public async getReceiverByRoomId(roomId: number, currentUserId: number): Promise<any> {
-        const result = await this.prismaService.roomUsers.findFirst({
-            where: {
-                roomId: roomId,
-                userId: {
-                    not: currentUserId
-                }
-            },
-            include: {
-                user: {
-                    select: this.userMapping
-                }
-            }
-        });
+    public async getReceiverByRoomId(roomId: number, userId: number): Promise<UserPrismaModel | unknown> {
+        const conversationId = await this.chatPrismaService.getConversationById(roomId);
 
-        return result.user;
-    }
+        if (!conversationId) {
+            throw new BadRequestException('The conversation was not found');
+        }
 
-    // Private Methods
-
-    private async getUserByRoom(roomId: number, userId: number): Promise<any> {
-        return this.prismaService.roomUsers.findFirst({
-            where: {
-                roomId: roomId,
-                userId: {
-                    not: userId
-                }
-            },
-            include: {
-                user: {
-                    select: this.userMapping
-                }
-            }
-        });
-    }
-
-    public async getUnreadMessagesByRoom(roomId: number, userId: number): Promise<any> {
-        return this.prismaService.messages.count({
-            where: {
-                roomId: roomId,
-                userId: {
-                    not: userId
-                },
-                isRead: false
-            }
-        });
-    }
-
-    private get userMapping(): { [key: string]: boolean } {
-        return {
-            id: true,
-            firstName: true,
-            lastName: true,
-            avatar: true,
-            isOnline: true,
-            createdAt: true
-        };
+        return this.chatPrismaService.getReceiverByRoomId(roomId, userId);
     }
 }

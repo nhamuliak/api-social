@@ -1,21 +1,22 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { UserService } from '@modules/user/user.service';
 import { compareProperties, hashProperty, getTokens, getAccessToken, verifyToken } from '@utils/helper';
 import { TokenModel, UserModel, PayloadModel } from '@models/index';
 import { LoginAuthDto, RegistrationAuthDto } from '../../dto';
 import { TokenService } from '@modules/auth/services/token/token.service';
 import { MailService } from '@modules/auth/services/mail/mail.service';
+import { UserPrismaService } from '@business/services/user-prisma/user-prisma.service';
+import { UserPrismaModel } from '@business/models';
 
 @Injectable()
 export class AuthService {
     constructor(
-        private readonly userService: UserService,
+        private readonly userPrismaService: UserPrismaService,
         private readonly tokenService: TokenService,
         private readonly mailService: MailService
     ) {}
 
     public async registration(registrationAuthDto: RegistrationAuthDto): Promise<void> {
-        const user = await this.userService.getUserByEmail(registrationAuthDto.email);
+        const user = await this.userPrismaService.getUserByEmail(registrationAuthDto.email);
 
         if (user) {
             throw new BadRequestException('The email has already existed.');
@@ -28,11 +29,11 @@ export class AuthService {
         // hash password
         registrationAuthDto.password = await hashProperty(registrationAuthDto.password);
 
-        await this.userService.createUser(registrationAuthDto);
+        await this.userPrismaService.createUser(registrationAuthDto);
     }
 
     public async login(loginAuthDto: LoginAuthDto): Promise<TokenModel> {
-        const user = await this.userService.getUserByEmail(loginAuthDto.email);
+        const user = await this.userPrismaService.getFullUserByEmailOrId(0, loginAuthDto.email);
 
         if (!user) {
             throw new BadRequestException('You email or password is incorrect.');
@@ -58,7 +59,7 @@ export class AuthService {
     }
 
     public async refresh(userId: number, refreshToken: string): Promise<TokenModel> {
-        const user = await this.userService.getUserById(userId);
+        const user = await this.userPrismaService.getUserById(userId);
 
         if (!user) {
             throw new BadRequestException('Request denied.');
@@ -82,7 +83,7 @@ export class AuthService {
     }
 
     public async recoverPassword(email: string): Promise<void> {
-        const user = await this.userService.getUserByEmail(email);
+        const user = await this.userPrismaService.getUserByEmail(email);
 
         if (!user) {
             throw new BadRequestException('User not found.');
@@ -97,7 +98,7 @@ export class AuthService {
 
     public async resetPassword(token: string, password: string): Promise<void> {
         const payload = await verifyToken(token);
-        const user = await this.userService.getUserById(payload.id);
+        const user = await this.userPrismaService.getUserById(payload.id);
 
         if (!user) {
             throw new BadRequestException('User not found.');
@@ -105,10 +106,10 @@ export class AuthService {
 
         const hashedPassword = await hashProperty(password);
 
-        await this.userService.updateUserById(user.id, { password: hashedPassword });
+        await this.userPrismaService.updateUserById(user.id, { password: hashedPassword });
     }
 
-    private getPayload(user: UserModel): PayloadModel {
+    private getPayload(user: UserModel | UserPrismaModel): PayloadModel {
         return {
             id: user.id,
             email: user.email,

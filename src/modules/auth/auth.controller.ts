@@ -34,7 +34,7 @@ export class AuthController {
     public async logout(@User('id') userId: number, @Res() res: Response): Promise<Response<string>> {
         await this.authService.logout(userId);
 
-        return res.status(HttpStatus.OK).send('Logged out.');
+        return res.status(HttpStatus.OK).send();
     }
 
     @UseGuards(RefreshGuard)

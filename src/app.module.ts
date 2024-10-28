@@ -1,7 +1,7 @@
 import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { AuthModule } from '@modules/auth/auth.module';
-import { PrismaModule } from '@modules/prisma/prisma.module';
+import { PrismaModule } from './business/prisma.module';
 import { UserModule } from '@modules/user/user.module';
 import { TermsModule } from '@modules/terms/terms.module';
 import { ConfigModule } from '@nestjs/config';

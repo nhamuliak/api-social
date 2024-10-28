@@ -6,11 +6,11 @@ export class RegistrationAuthDto extends LoginAuthDto {
     public firstName: string;
 
     @IsNotEmpty()
-    public lastName?: string;
+    public lastName: string;
 
     @IsOptional()
     @IsPositive()
-    public age?: number;
+    public age: number;
 
     @IsOptional()
     public avatar?: string;

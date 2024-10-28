@@ -35,7 +35,7 @@ export class S3Service {
         return `https://${this.bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
     }
 
-    public deleteFile(fileKey: string): Promise<any> {
+    public deleteFile(fileKey: string): Promise<unknown> {
         const command = new DeleteObjectCommand({
             Bucket: process.env.AWS_S3_BUCKET_NAME,
             Key: fileKey

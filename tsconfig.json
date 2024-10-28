@@ -21,7 +21,8 @@
       "@core/*": ["src/core/*"],
       "@models/*": ["src/models/*"],
       "@modules/*": ["src/modules/*"],
-      "@utils/*": ["src/utils/*"]
+      "@utils/*": ["src/utils/*"],
+      "@business/*": ["src/business/*"]
     }
   }
 }
