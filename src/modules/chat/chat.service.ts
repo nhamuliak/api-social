@@ -1,8 +1,7 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ChatPrismaService } from '@business/services/chat-prisma/chat-prisma.service';
 import { ConversationPrismaModel, MessagePrismaModel } from '@business/models/chat-prisma.model';
 import { UserPrismaService } from '@business/services/user-prisma/user-prisma.service';
-import { Response } from 'express';
 import { PaginationModel } from '@models/pagination.model';
 import { UserPrismaModel } from '@business/models';
 
