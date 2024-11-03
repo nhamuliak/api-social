@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
-import { RegistrationAuthDto } from '@modules/auth/dto';
 import { UpdateUserDto } from '@modules/user/dto/update-user.dto';
-import { PaginationModel, UserPrismaModel } from '@business/models';
+import { PaginationModel, UserPrismaBody, UserPrismaModel } from '@business/models';
 import { FullUserPrismaModel } from '@business/models/user-prisma.model';
 
 @Injectable()
@@ -109,9 +108,9 @@ export class UserPrismaService {
         });
     }
 
-    public async createUser(registrationAuthDto: RegistrationAuthDto): Promise<UserPrismaModel> {
+    public async createUser(body: UserPrismaBody): Promise<UserPrismaModel> {
         return this.prismaService.users.create({
-            data: Object.assign(registrationAuthDto),
+            data: Object.assign(body),
             select: {
                 id: true,
                 email: true,

@@ -1,4 +1,4 @@
-import { UserPrismaModel } from './user-prisma.model';
+import { UserPrismaBody, UserPrismaModel } from './user-prisma.model';
 import { PaginationModel } from '@models/pagination.model';
 
-export { PaginationModel, UserPrismaModel };
+export { PaginationModel, UserPrismaModel, UserPrismaBody };

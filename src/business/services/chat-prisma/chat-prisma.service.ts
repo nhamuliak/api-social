@@ -150,6 +150,10 @@ export class ChatPrismaService {
             }
         });
 
+        if (groupedRooms.length === 0) {
+            return { roomId: 0 };
+        }
+
         const result = await this.prismaService.rooms.findFirst({
             where: {
                 id: groupedRooms[0].roomId

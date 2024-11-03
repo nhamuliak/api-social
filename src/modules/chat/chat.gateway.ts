@@ -39,7 +39,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             await this.userPrismaService.updateUserOnlineStatusById(user.id, true);
 
             this.server.emit('online-users', Array.from(userSocketMap.keys()));
-            console.log('user is connected... ', user.id, socket.id);
         } catch {
             this.disconnect(socket);
         }

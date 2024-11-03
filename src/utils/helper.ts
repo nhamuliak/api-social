@@ -2,6 +2,7 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { PayloadModel, TokenModel } from '@models/index';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@utils/constants';
+import { BadRequestException } from '@nestjs/common';
 
 const jwtService = new JwtService();
 
@@ -23,27 +24,41 @@ export async function hashProperty(property: string): Promise<string> {
 
 export async function getTokens(payload: PayloadModel): Promise<TokenModel> {
     return {
-        accessToken: await getAccessToken(payload, '1d'),
+        accessToken: await getAccessToken(payload),
         refreshToken: await getRefreshToken(payload)
     };
 }
 
-export async function getAccessToken(payload: PayloadModel, expiresIn: string = '60s'): Promise<string> {
+export async function getAccessToken(payload: PayloadModel, expiresIn: string = '1d'): Promise<string> {
     return await jwtService.signAsync(payload, {
         expiresIn,
         secret: ACCESS_TOKEN_KEY
     });
 }
 
-export async function getRefreshToken(payload: PayloadModel): Promise<string> {
+export async function getRefreshToken(payload: PayloadModel, expiresIn: string = '3d'): Promise<string> {
     return await jwtService.signAsync(payload, {
-        expiresIn: '3d',
+        expiresIn,
         secret: REFRESH_TOKEN_KEY
     });
 }
 
 export async function verifyToken(token: string): Promise<PayloadModel> {
-    return jwtService.verify(token, {
-        secret: ACCESS_TOKEN_KEY
-    });
+    try {
+        return jwtService.verify(token, {
+            secret: ACCESS_TOKEN_KEY
+        });
+    } catch (err) {
+        throw new BadRequestException('Token has expired.');
+    }
+}
+
+export async function verifyRefreshToken(token: string): Promise<PayloadModel> {
+    try {
+        return jwtService.verify(token, {
+            secret: REFRESH_TOKEN_KEY
+        });
+    } catch (err) {
+        throw new BadRequestException('Refresh token has expired.');
+    }
 }

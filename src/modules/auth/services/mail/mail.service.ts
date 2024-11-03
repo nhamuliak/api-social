@@ -18,4 +18,16 @@ export class MailService {
             }
         });
     }
+
+    public async sendGeneratedPassword(to: string, name: string, password: string): Promise<void> {
+        await this.mailerService.sendMail({
+            to,
+            subject: 'Chat App',
+            template: './generated-password',
+            context: {
+                name,
+                password
+            }
+        });
+    }
 }

@@ -7,6 +7,7 @@ import { ChatGateway } from '@modules/chat/chat.gateway';
 import { PaginationModel } from '@models/pagination.model';
 import { ConversationPrismaModel, MessagePrismaModel } from '@business/models/chat-prisma.model';
 import { UserPrismaModel } from '@business/models';
+import { MessageDto } from '@modules/chat/dto/message.dto';
 
 @UseGuards(AccessGuard)
 @Controller('chat')
@@ -75,7 +76,7 @@ export class ChatController {
     @Post('messages')
     public async createMessage(
         @User('id') userId: number,
-        @Body() { roomId, receiverId, content }: any,
+        @Body() { roomId, receiverId, content }: MessageDto,
         @Res() res: Response
     ): Promise<Response<MessagePrismaModel>> {
         const message = await this.chatService.sendMessage(roomId, userId, receiverId, content);

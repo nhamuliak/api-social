@@ -1,17 +1,23 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { compareProperties, hashProperty, getTokens, getAccessToken, verifyToken } from '@utils/helper';
+import {
+    compareProperties,
+    hashProperty,
+    getTokens,
+    getAccessToken,
+    verifyToken,
+    verifyRefreshToken
+} from '@utils/helper';
 import { TokenModel, UserModel, PayloadModel } from '@models/index';
-import { LoginAuthDto, RegistrationAuthDto } from '../../dto';
-import { TokenService } from '@modules/auth/services/token/token.service';
+import { LoginAuthDto, RegistrationAuthDto, SocialAuthDto } from '../../dto';
 import { MailService } from '@modules/auth/services/mail/mail.service';
 import { UserPrismaService } from '@business/services/user-prisma/user-prisma.service';
-import { UserPrismaModel } from '@business/models';
+import { UserPrismaBody, UserPrismaModel } from '@business/models';
+import { generate } from 'generate-password';
 
 @Injectable()
 export class AuthService {
     constructor(
         private readonly userPrismaService: UserPrismaService,
-        private readonly tokenService: TokenService,
         private readonly mailService: MailService
     ) {}
 
@@ -32,7 +38,7 @@ export class AuthService {
         await this.userPrismaService.createUser(registrationAuthDto);
     }
 
-    public async login(loginAuthDto: LoginAuthDto): Promise<TokenModel> {
+    public async login(loginAuthDto: LoginAuthDto): Promise<{ tokens: TokenModel; user: UserModel }> {
         const user = await this.userPrismaService.getFullUserByEmailOrId(0, loginAuthDto.email);
 
         if (!user) {
@@ -47,39 +53,53 @@ export class AuthService {
 
         const payload: PayloadModel = this.getPayload(user);
         const tokens: TokenModel = await getTokens(payload);
-        const refreshTokenHash = await hashProperty(tokens.refreshToken);
 
-        await this.tokenService.storeRefreshToken(user.id, refreshTokenHash);
-
-        return tokens;
+        return {
+            tokens,
+            user
+        };
     }
 
-    public async logout(userId: number): Promise<void> {
-        await this.tokenService.deleteRefreshTokensByUserId(userId);
-    }
+    public async socialAuth(socialAuthDto: SocialAuthDto): Promise<{ tokens: TokenModel; user: UserModel }> {
+        const user = await this.userPrismaService.getFullUserByEmailOrId(0, socialAuthDto.email);
 
-    public async refresh(userId: number, refreshToken: string): Promise<TokenModel> {
-        const user = await this.userPrismaService.getUserById(userId);
+        if (user) {
+            const payload: PayloadModel = this.getPayload(user);
+            const tokens: TokenModel = await getTokens(payload);
 
-        if (!user) {
-            throw new BadRequestException('Request denied.');
+            return { tokens, user };
         }
 
-        const hash = await this.tokenService.getTokenByUserId(userId);
+        const generatedPassword = generate({ length: 10, numbers: true, strict: true });
 
-        const isMatch = await compareProperties(refreshToken, hash);
+        const hash = await hashProperty(generatedPassword);
 
-        if (!isMatch) {
-            throw new BadRequestException('Request denied.');
-        }
+        const body: UserPrismaBody = {
+            email: socialAuthDto.email,
+            firstName: socialAuthDto.firstName,
+            lastName: socialAuthDto.lastName,
+            avatar: socialAuthDto.avatar,
+            password: hash,
+            acceptTerms: true
+        };
 
-        const payload: PayloadModel = this.getPayload(user);
+        const createdUser = await this.userPrismaService.createUser(body);
+
+        const name = `${createdUser.firstName} ${createdUser.lastName}`;
+
+        await this.mailService.sendGeneratedPassword(createdUser.email, name, generatedPassword);
+
+        const payload: PayloadModel = this.getPayload(createdUser);
         const tokens: TokenModel = await getTokens(payload);
-        const refreshTokenHash = await hashProperty(tokens.refreshToken);
 
-        await this.tokenService.storeRefreshToken(user.id, refreshTokenHash);
+        return { tokens, user: createdUser };
+    }
 
-        return tokens;
+    public async refresh(refreshToken: string): Promise<TokenModel> {
+        const payload = await verifyRefreshToken(refreshToken);
+        const user = await this.userPrismaService.getUserById(payload.id);
+
+        return await getTokens(user);
     }
 
     public async recoverPassword(email: string): Promise<void> {

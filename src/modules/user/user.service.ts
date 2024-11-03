@@ -33,13 +33,15 @@ export class UserService {
         }
 
         if (updateUserDto.oldPassword && updateUserDto.password) {
-            const isMatch = await bcrypt.compare(user.password, updateUserDto.oldPassword);
+            const isMatch = await bcrypt.compare(updateUserDto.oldPassword, user.password);
 
             if (!isMatch) {
                 throw new BadRequestException('The old password is not correct.');
             }
 
             updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+
+            delete updateUserDto.oldPassword;
         } else {
             delete updateUserDto.oldPassword;
             delete updateUserDto.password;

@@ -1,12 +1,10 @@
 import { Response } from 'express';
-import { Controller, Post, Body, Res, HttpStatus, UseGuards } from '@nestjs/common';
-import { TokenModel } from '@models/token.model';
+import { Controller, Post, Body, Res, HttpStatus, Req } from '@nestjs/common';
 import { AuthService } from './services/auth/auth.service';
-import { LoginAuthDto, RegistrationAuthDto } from './dto';
-import { User } from '@core/decorators';
-import { AccessGuard } from '@core/guards/access/access.guard';
-import { RefreshGuard } from '@core/guards/refresh/refresh.guard';
-import { RefreshPayloadModel } from '@models/payload.model';
+import { LoginAuthDto, RegistrationAuthDto, SocialAuthDto } from './dto';
+import { Cookies } from '@core/decorators';
+import { AuthResponse } from '@models/auth.model';
+import { ENV_PRODUCTION } from '@utils/constants';
 
 @Controller('auth')
 export class AuthController {
@@ -23,36 +21,72 @@ export class AuthController {
     }
 
     @Post('login')
-    public async login(@Res() res: Response, @Body() loginAuthDto: LoginAuthDto): Promise<Response<TokenModel>> {
-        const tokens = await this.authService.login(loginAuthDto);
+    public async login(
+        @Res() res: Response,
+        @Req() req: any,
+        @Body() loginAuthDto: LoginAuthDto
+    ): Promise<Response<AuthResponse>> {
+        const result = await this.authService.login(loginAuthDto);
 
-        return res.status(HttpStatus.OK).send(tokens);
+        res.cookie('refreshToken', result.tokens.refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === ENV_PRODUCTION
+        });
+
+        return res.status(HttpStatus.OK).send({
+            accessToken: result.tokens.accessToken,
+            user: result.user
+        });
     }
 
-    @UseGuards(AccessGuard)
+    @Post('social-auth')
+    public async socialAuth(
+        @Res() res: Response,
+        @Body() socialAuthDto: SocialAuthDto
+    ): Promise<Response<AuthResponse>> {
+        const result = await this.authService.socialAuth(socialAuthDto);
+
+        res.cookie('refreshToken', result.tokens.refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === ENV_PRODUCTION
+        });
+
+        return res.status(HttpStatus.OK).send({
+            accessToken: result.tokens.accessToken,
+            user: result.user
+        });
+    }
+
     @Post('logout')
-    public async logout(@User('id') userId: number, @Res() res: Response): Promise<Response<string>> {
-        await this.authService.logout(userId);
+    public async logout(@Res() res: Response): Promise<Response<string>> {
+        res.clearCookie('refreshToken', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === ENV_PRODUCTION
+        });
 
         return res.status(HttpStatus.OK).send();
     }
 
-    @UseGuards(RefreshGuard)
     @Post('refresh')
     public async refresh(
-        @User() { id: userId, refreshToken }: RefreshPayloadModel,
+        @Cookies('refreshToken') refreshToken: string,
         @Res() res: Response
-    ): Promise<Response<TokenModel>> {
-        const tokens = await this.authService.refresh(userId, refreshToken);
+    ): Promise<Response<{ accessToken: string }>> {
+        const tokens = await this.authService.refresh(refreshToken);
 
-        return res.status(HttpStatus.OK).send(tokens);
+        res.cookie('refreshToken', tokens.refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === ENV_PRODUCTION
+        });
+
+        return res.status(HttpStatus.OK).send({ accessToken: tokens.accessToken });
     }
 
     @Post('recover-password')
     public async recoverPassword(@Body('email') email: string, @Res() res: Response): Promise<Response<string>> {
         await this.authService.recoverPassword(email);
 
-        return res.status(HttpStatus.OK).send('Please check your email.');
+        return res.status(HttpStatus.OK).send({ title: 'Please check your email.' });
     }
 
     @Post('reset-password')
@@ -62,6 +96,6 @@ export class AuthController {
     ): Promise<Response<string>> {
         await this.authService.resetPassword(token, password);
 
-        return res.status(HttpStatus.OK).send('Your password was updated successfully.');
+        return res.status(HttpStatus.OK).send({ title: 'Your password was updated successfully.' });
     }
 }
