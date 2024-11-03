@@ -27,20 +27,15 @@ export class ChatService {
         return this.chatPrismaService.getLatestConversations(id, userId);
     }
 
-    public async createConversation(userId: number, receiverId: number, res: Response): Promise<number> {
+    public async checkIfConversationExists(userId: number, receiverId: number): Promise<{ roomId: number }> {
         if (receiverId === userId) {
             throw new BadRequestException('Receiver user cannot be the sender');
         }
 
-        const conversation = await this.chatPrismaService.getConversationByUserIds(userId, receiverId);
+        return this.chatPrismaService.getConversationByUserIds(userId, receiverId);
+    }
 
-        if (conversation) {
-            res.status(HttpStatus.OK).send(conversation);
-
-            return;
-        }
-
-        // Create a new conversation
+    public async createConversation(userId: number, receiverId: number): Promise<number> {
         return await this.chatPrismaService.createConversation(userId, receiverId);
     }
 
@@ -82,16 +77,20 @@ export class ChatService {
             throw new BadRequestException('The conversation was not found');
         }
 
-        const message = await this.chatPrismaService.createMessage(senderId, roomId, content);
+        const sender = await this.userPrismaService.getUserById(senderId);
 
+        if (!sender) {
+            throw new BadRequestException('The sender was not found');
+        }
+
+        const message = await this.chatPrismaService.createMessage(senderId, roomId, content);
         const unreadMessagesCount = await this.chatPrismaService.getUnreadMessagesByRoom(roomId, receiverId);
-        const user = await this.userPrismaService.getUserById(senderId);
 
         return {
             id: conversationId,
             roomId,
             message,
-            user,
+            user: sender,
             unreadMessagesCount
         };
     }
@@ -112,13 +111,19 @@ export class ChatService {
         await this.chatPrismaService.updateMessagesReadStatus(roomId, senderId);
     }
 
-    public async getReceiverByRoomId(roomId: number, userId: number): Promise<UserPrismaModel | unknown> {
+    public async getReceiverByRoomId(roomId: number, userId: number): Promise<UserPrismaModel> {
         const conversationId = await this.chatPrismaService.getConversationById(roomId);
 
         if (!conversationId) {
             throw new BadRequestException('The conversation was not found');
         }
 
-        return this.chatPrismaService.getReceiverByRoomId(roomId, userId);
+        const receiver = await this.chatPrismaService.getReceiverByRoomId(roomId, userId);
+
+        if (!receiver) {
+            throw new BadRequestException('The receiver was not found');
+        }
+
+        return receiver;
     }
 }

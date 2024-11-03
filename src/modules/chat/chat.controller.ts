@@ -44,7 +44,13 @@ export class ChatController {
         @Body() { receiverId }: { receiverId: number },
         @Res() res: Response
     ): Promise<Response<{ conversationId: number }>> {
-        const conversationId = await this.chatService.createConversation(userId, receiverId, res);
+        const result = await this.chatService.checkIfConversationExists(userId, receiverId);
+
+        if (result.roomId) {
+            return res.status(HttpStatus.OK).send(result);
+        }
+
+        const conversationId = await this.chatService.createConversation(userId, receiverId);
 
         return res.status(HttpStatus.OK).send({ roomId: conversationId });
     }
@@ -73,17 +79,17 @@ export class ChatController {
         return res.status(HttpStatus.OK).send(result);
     }
 
-    @Post('messages')
+    @Post('message')
     public async createMessage(
         @User('id') userId: number,
         @Body() { roomId, receiverId, content }: MessageDto,
         @Res() res: Response
     ): Promise<Response<MessagePrismaModel>> {
-        const message = await this.chatService.sendMessage(roomId, userId, receiverId, content);
+        const conversation = await this.chatService.sendMessage(roomId, userId, receiverId, content);
 
-        this.chatGateway.notifyCreatedMessage(receiverId, message);
+        this.chatGateway.notifyCreatedMessage(receiverId, conversation);
 
-        return res.status(HttpStatus.OK).send(message);
+        return res.status(HttpStatus.OK).send({ ...conversation.message, user: conversation.user });
     }
 
     @Get(':id/receiver')

@@ -289,7 +289,7 @@ export class ChatPrismaService {
         });
     }
 
-    public async getReceiverByRoomId(roomId: number, currentUserId: number): Promise<UserPrismaModel | unknown> {
+    public async getReceiverByRoomId(roomId: number, currentUserId: number): Promise<UserPrismaModel> {
         const result = await this.prismaService.roomUsers.findFirst({
             where: {
                 roomId: roomId,

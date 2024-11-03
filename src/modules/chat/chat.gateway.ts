@@ -58,19 +58,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         socket.emit('online-users', Array.from(userSocketMap.keys()));
     }
 
-    @SubscribeMessage('send-message')
-    public async handleCreateMessage(
-        @MessageBody() { roomId, receiverId, content }: { roomId: number; receiverId: number; content: string },
-        @ConnectedSocket() socket: Socket
-    ): Promise<void> {
-        const conversation = await this.chatService.sendMessage(roomId, socket.data.userId, receiverId, content);
-
-        const receiverSocketId = userSocketMap.get(receiverId);
-
-        this.server.to(receiverSocketId).to(socket.id).emit('message', conversation.message);
-        this.server.to(receiverSocketId).to(socket.id).emit('last-messages', conversation);
-    }
-
     @SubscribeMessage('mark-messages-as-read')
     public async handleUnreadMessages(
         @MessageBody() { roomId, senderId }: { roomId: number; senderId: number }

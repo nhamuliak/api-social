@@ -17,7 +17,7 @@ export class AuthController {
     ): Promise<Response<string>> {
         await this.authService.registration(registrationAuthDto);
 
-        return res.status(HttpStatus.OK).send('Your registration is successful.');
+        return res.status(HttpStatus.OK).send({ message: 'Your were successfully registered.' });
     }
 
     @Post('login')
@@ -86,7 +86,7 @@ export class AuthController {
     public async recoverPassword(@Body('email') email: string, @Res() res: Response): Promise<Response<string>> {
         await this.authService.recoverPassword(email);
 
-        return res.status(HttpStatus.OK).send({ title: 'Please check your email.' });
+        return res.status(HttpStatus.OK).send({ message: 'Please check your email.' });
     }
 
     @Post('reset-password')
@@ -96,6 +96,6 @@ export class AuthController {
     ): Promise<Response<string>> {
         await this.authService.resetPassword(token, password);
 
-        return res.status(HttpStatus.OK).send({ title: 'Your password was updated successfully.' });
+        return res.status(HttpStatus.OK).send({ message: 'Your password was updated successfully.' });
     }
 }
