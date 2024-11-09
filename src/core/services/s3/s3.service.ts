@@ -44,7 +44,7 @@ export class S3Service {
         return this.s3.send(command);
     }
 
-    private generateFileName(fileName: string): string {
+    public generateFileName(fileName: string): string {
         const fileNameArr: string[] = fileName.split('.');
 
         const prefix: string = fileNameArr.pop();

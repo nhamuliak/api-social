@@ -22,7 +22,8 @@
       "@models/*": ["src/models/*"],
       "@modules/*": ["src/modules/*"],
       "@utils/*": ["src/utils/*"],
-      "@business/*": ["src/business/*"]
+      "@business/*": ["src/business/*"],
+      "@mock/*": ["src/mock/*"]
     }
   }
 }

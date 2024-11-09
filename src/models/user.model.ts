@@ -8,3 +8,7 @@ export interface UserModel {
     isOnline: boolean;
     createdAt: Date;
 }
+
+export interface FullUserModel extends UserModel {
+    password: string;
+}

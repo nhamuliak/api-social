@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { PaginationModel, UserPrismaModel } from '@business/models';
-import { ConversationPrismaModel, MessagePrismaModel } from '@business/models/chat-prisma.model';
+import {
+    ConversationMessagePrismaModel,
+    ConversationPrismaModel,
+    MessagePrismaModel
+} from '@business/models/chat-prisma.model';
 
 @Injectable()
 export class ChatPrismaService {
@@ -253,7 +257,11 @@ export class ChatPrismaService {
         };
     }
 
-    public async createMessage(userId: number, roomId: number, content: string): Promise<MessagePrismaModel> {
+    public async createMessage(
+        userId: number,
+        roomId: number,
+        content: string
+    ): Promise<ConversationMessagePrismaModel> {
         return this.prismaService.messages.create({
             data: {
                 userId,
