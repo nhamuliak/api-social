@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { TermsService } from './terms.service';
-import { TermsController } from './terms.controller';
+import { TermsService } from './services/terms.service';
+import { TermsController } from './controllers/terms.controller';
 
 @Module({
     controllers: [TermsController],

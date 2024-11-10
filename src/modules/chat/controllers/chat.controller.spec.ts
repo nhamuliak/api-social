@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChatController } from './chat.controller';
-import { ChatService } from '@modules/chat/chat.service';
+import { ChatService } from '@modules/chat/services/chat.service';
 import { MockChatService } from '@mock/services';
 import { HttpStatus } from '@nestjs/common';
 import { mockResponse } from '@mock/helper';

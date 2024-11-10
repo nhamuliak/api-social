@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TermsController } from './terms.controller';
-import { TermsService } from './terms.service';
+import { TermsService } from '../services/terms.service';
 import { mockResponse } from '@mock/helper';
 import { TermsModel } from '@models/terms.model';
 import { HttpStatus } from '@nestjs/common';

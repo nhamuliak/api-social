@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
 import { AccessGuard } from '@core/guards/access/access.guard';
 import { User } from '@core/decorators';
-import { ChatService } from '@modules/chat/chat.service';
+import { ChatService } from '@modules/chat/services/chat.service';
 import { ChatGateway } from '@modules/chat/chat.gateway';
 import { PaginationModel } from '@models/pagination.model';
 import { ConversationPrismaModel, MessagePrismaModel } from '@business/models/chat-prisma.model';

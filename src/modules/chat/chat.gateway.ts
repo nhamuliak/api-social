@@ -11,7 +11,7 @@ import { Socket, Server } from 'socket.io';
 import { verifyToken } from '@utils/helper';
 import { UnauthorizedException } from '@nestjs/common';
 import { UserPrismaService } from '@business/services/user-prisma/user-prisma.service';
-import { ChatService } from '@modules/chat/chat.service';
+import { ChatService } from '@modules/chat/services/chat.service';
 import { ConversationPrismaModel } from '@business/models/chat-prisma.model';
 
 const userSocketMap = new Map();

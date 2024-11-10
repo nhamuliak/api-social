@@ -10,8 +10,8 @@ import {
     UploadedFile,
     UseGuards
 } from '@nestjs/common';
-import { UserService } from './user.service';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UserService } from '../services/user.service';
+import { UpdateUserDto } from '../dto/update-user.dto';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { User } from '@core/decorators';

@@ -9,4 +9,5 @@ export class MockChatPrismaService {
     public getUnreadMessagesByRoom = jest.fn();
     public updateMessagesReadStatus = jest.fn();
     public getReceiverByRoomId = jest.fn();
+    public getLatestConversations = jest.fn();
 }

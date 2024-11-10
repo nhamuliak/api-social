@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
 import { TermsModel } from '@models/terms.model';
-import { TermsService } from './terms.service';
+import { TermsService } from '../services/terms.service';
 
 @Controller('terms')
 export class TermsController {

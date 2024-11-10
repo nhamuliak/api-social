@@ -204,4 +204,83 @@ describe('ChatService', () => {
             await expect(service.getReceiverByRoomId(roomId, userId)).rejects.toThrow(BadRequestException);
         });
     });
+
+    it('should throw BadRequestException if conversation not found', async () => {
+        jest.spyOn(mockChatPrismaService, 'getConversationById').mockResolvedValue(null);
+
+        try {
+            await service.getLatestConversations(1, 2);
+        } catch (error) {
+            expect(error).toBeInstanceOf(BadRequestException);
+            expect(error.response.message).toBe('The conversation was not found');
+        }
+    });
+
+    it('should return latest conversations if conversation exists', async () => {
+        const mockConversation = 1;
+        const mockLatestConversations = [{ id: 1, userId: 2, content: 'Hello' }];
+
+        jest.spyOn(mockChatPrismaService, 'getConversationById').mockResolvedValue(mockConversation);
+        jest.spyOn(mockChatPrismaService, 'getLatestConversations').mockResolvedValue(mockLatestConversations);
+
+        const result = await service.getLatestConversations(1, 2);
+
+        expect(result).toEqual(mockLatestConversations);
+    });
+
+    describe('checkIfConversationExists', () => {
+        it('should throw BadRequestException if receiverId is same as userId', async () => {
+            try {
+                await service.checkIfConversationExists(1, 1);
+            } catch (error) {
+                expect(error).toBeInstanceOf(BadRequestException);
+                expect(error.response.message).toBe('Receiver user cannot be the sender');
+            }
+        });
+
+        it('should return roomId if conversation exists', async () => {
+            const mockRoomId = 123;
+
+            jest.spyOn(mockChatPrismaService, 'getConversationByUserIds').mockResolvedValue({ roomId: mockRoomId });
+
+            const result = await service.checkIfConversationExists(1, 2);
+
+            expect(result).toEqual({ roomId: mockRoomId });
+        });
+    });
+
+    describe('createConversation', () => {
+        it('should return roomId if conversation is created', async () => {
+            const mockRoomId = 123;
+
+            jest.spyOn(mockChatPrismaService, 'createConversation').mockResolvedValue(mockRoomId);
+
+            const result = await service.createConversation(1, 2);
+
+            expect(result).toBe(mockRoomId);
+        });
+    });
+
+    describe('deleteConversationByRoomId', () => {
+        it('should throw BadRequestException if conversation not found', async () => {
+            jest.spyOn(mockChatPrismaService, 'getConversationById').mockResolvedValue(null);
+
+            try {
+                await service.deleteConversationByRoomId(1);
+            } catch (error) {
+                expect(error).toBeInstanceOf(BadRequestException);
+                expect(error.response.message).toBe('The conversation was not found');
+            }
+        });
+
+        it('should delete conversation if it exists', async () => {
+            const mockConversation = 1;
+            jest.spyOn(mockChatPrismaService, 'getConversationById').mockResolvedValue(mockConversation);
+            jest.spyOn(mockChatPrismaService, 'deleteConversationByRoomId').mockResolvedValue(null);
+
+            await service.deleteConversationByRoomId(1);
+
+            expect(mockChatPrismaService.deleteConversationByRoomId).toHaveBeenCalledWith(1);
+        });
+    });
 });

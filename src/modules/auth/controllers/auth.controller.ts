@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { Controller, Post, Body, Res, HttpStatus, Req } from '@nestjs/common';
-import { AuthService } from './services/auth/auth.service';
-import { LoginAuthDto, RegistrationAuthDto, SocialAuthDto } from './dto';
+import { AuthService } from '../services/auth/auth.service';
+import { LoginAuthDto, RegistrationAuthDto, SocialAuthDto } from '../dto';
 import { Cookies } from '@core/decorators';
 import { AuthResponse } from '@models/auth.model';
 import { ENV_PRODUCTION } from '@utils/constants';

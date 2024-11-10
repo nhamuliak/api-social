@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserController } from './user.controller';
-import { UserService } from './user.service';
+import { UserService } from '../services/user.service';
 import { mockUpdateUserData, mockUserData } from '@mock/data';
 import { UserModel } from '@models/user.model';
 import { UpdateUserDto } from '@modules/user/dto/update-user.dto';

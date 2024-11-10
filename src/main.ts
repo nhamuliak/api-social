@@ -9,7 +9,7 @@ async function bootstrap() {
 
     app.setGlobalPrefix('api');
     app.enableCors({ origin: true, credentials: true });
-    app.use(cookieParser('secret'));
+    app.use(cookieParser(process.env.COOKIE_SECRET));
     app.use(cookieParser());
     app.useGlobalFilters(new ErrorHandlerFilter());
     app.useGlobalPipes(
