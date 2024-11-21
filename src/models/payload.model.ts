@@ -7,7 +7,3 @@ export interface PayloadModel {
     age: number;
     avatar: string;
 }
-
-export interface RefreshPayloadModel extends PayloadModel {
-    refreshToken: string;
-}

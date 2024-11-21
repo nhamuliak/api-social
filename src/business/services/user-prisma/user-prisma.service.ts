@@ -143,7 +143,7 @@ export class UserPrismaService {
         });
     }
 
-    public async updateUserOnlineStatusById(id: number, isOnline: boolean): Promise<UserPrismaModel | unknown> {
+    public async updateUserOnlineStatusById(id: number, isOnline: boolean): Promise<UserPrismaModel> {
         return this.prismaService.users.update({
             where: {
                 id

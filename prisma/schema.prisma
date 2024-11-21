@@ -9,27 +9,18 @@ generator client {
 }
 
 model Users {
-  id          Int          @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   firstName   String
   lastName    String
   age         Int?
-  email       String       @unique
+  email       String      @unique
   password    String
   avatar      String?
-  acceptTerms Boolean      @default(false)
-  isOnline    Boolean      @default(false)
-  createdAt   DateTime     @default(now())
-  tokens      UserTokens[] @relation(name: "UserTokensToUsers")
-  messages    Messages[]   @relation(name: "MessagesToUsers")
-  roomUsers   RoomUsers[]  @relation(name: "RoomUsersToUsers")
-}
-
-model UserTokens {
-  id               Int      @id @default(autoincrement())
-  refreshTokenHash String
-  user             Users    @relation(name: "UserTokensToUsers", fields: [userId], references: [id])
-  userId           Int
-  createdAt        DateTime @default(now())
+  acceptTerms Boolean     @default(false)
+  isOnline    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  messages    Messages[]  @relation(name: "MessagesToUsers")
+  roomUsers   RoomUsers[] @relation(name: "RoomUsersToUsers")
 }
 
 model RoomUsers {
