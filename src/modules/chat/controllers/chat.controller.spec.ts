@@ -14,7 +14,7 @@ import {
 } from '@mock/data';
 import { PaginationModel } from '@models/pagination.model';
 import { MessagePrismaModel } from '@business/models/chat-prisma.model';
-import { MessageDto } from '@modules/chat/dto/message.dto';
+import { MessageDto } from '@modules/chat/dto';
 import { UserPrismaModel } from '@business/models';
 
 describe('ChatController', () => {

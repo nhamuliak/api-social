@@ -7,7 +7,7 @@ import { ChatGateway } from '@modules/chat/chat.gateway';
 import { PaginationModel } from '@models/pagination.model';
 import { ConversationPrismaModel, MessagePrismaModel } from '@business/models/chat-prisma.model';
 import { UserPrismaModel } from '@business/models';
-import { MessageDto } from '@modules/chat/dto/message.dto';
+import { ConversationChatDto, MessageDto } from '@modules/chat/dto';
 
 @UseGuards(AccessGuard)
 @Controller('chat')
@@ -41,7 +41,7 @@ export class ChatController {
     @Post('')
     public async createConversation(
         @User('id') userId: number,
-        @Body() { receiverId }: { receiverId: number },
+        @Body() { receiverId }: ConversationChatDto,
         @Res() res: Response
     ): Promise<Response<{ conversationId: number }>> {
         const result = await this.chatService.checkIfConversationExists(userId, receiverId);
@@ -58,7 +58,7 @@ export class ChatController {
     @Delete(':id')
     public async deleteConversationByRoomId(
         @Param('id') roomId: number,
-        @Body() { receiverId }: { receiverId: number },
+        @Body() { receiverId }: ConversationChatDto,
         @Res() res: Response
     ): Promise<Response<void>> {
         await this.chatService.deleteConversationByRoomId(+roomId);
