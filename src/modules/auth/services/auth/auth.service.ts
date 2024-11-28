@@ -7,7 +7,7 @@ import {
     verifyToken,
     verifyRefreshToken
 } from '@utils/helper';
-import { TokenModel, UserModel, PayloadModel } from '@models/index';
+import { TokenModel, PayloadModel } from '@models/index';
 import { LoginAuthDto, RegistrationAuthDto, SocialAuthDto } from '../../dto';
 import { MailService } from '@modules/auth/services/mail/mail.service';
 import { UserPrismaService } from '@business/services/user-prisma/user-prisma.service';
@@ -38,7 +38,7 @@ export class AuthService {
         await this.userPrismaService.createUser(registrationAuthDto);
     }
 
-    public async login(loginAuthDto: LoginAuthDto): Promise<{ tokens: TokenModel; user: UserModel }> {
+    public async login(loginAuthDto: LoginAuthDto): Promise<{ tokens: TokenModel; user: PayloadModel }> {
         const user = await this.userPrismaService.getFullUserByEmailOrId(0, loginAuthDto.email);
 
         if (!user) {
@@ -56,11 +56,11 @@ export class AuthService {
 
         return {
             tokens,
-            user
+            user: payload
         };
     }
 
-    public async socialAuth(socialAuthDto: SocialAuthDto): Promise<{ tokens: TokenModel; user: UserModel }> {
+    public async socialAuth(socialAuthDto: SocialAuthDto): Promise<{ tokens: TokenModel; user: PayloadModel }> {
         const user = await this.userPrismaService.getFullUserByEmailOrId(0, socialAuthDto.email);
 
         if (user) {
@@ -92,7 +92,7 @@ export class AuthService {
         const payload: PayloadModel = this.getPayload(createdUser);
         const tokens: TokenModel = await getTokens(payload);
 
-        return { tokens, user: createdUser };
+        return { tokens, user: payload };
     }
 
     public async refresh(refreshToken: string): Promise<TokenModel> {
@@ -129,7 +129,7 @@ export class AuthService {
         await this.userPrismaService.updateUserById(user.id, { password: hashedPassword });
     }
 
-    private getPayload(user: UserModel | UserPrismaModel): PayloadModel {
+    private getPayload(user: UserPrismaModel): PayloadModel {
         return {
             id: user.id,
             email: user.email,
