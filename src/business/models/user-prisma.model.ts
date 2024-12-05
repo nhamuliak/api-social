@@ -6,7 +6,7 @@ export interface UserPrismaModel {
     age: number;
     avatar: string;
     isOnline: boolean;
-    createdAt: Date;
+    createdAt?: Date;
 }
 
 export interface FullUserPrismaModel extends UserPrismaModel {

@@ -4,7 +4,7 @@ import { ChatService } from '@modules/chat/services/chat.service';
 import { MockChatService } from '@mock/services';
 import { HttpStatus } from '@nestjs/common';
 import { mockResponse } from '@mock/helper';
-import { ChatGateway } from '@modules/chat/chat.gateway';
+import { ChatGateway } from '@modules/chat/gateways/chat.gateway';
 import {
     mockConversationData,
     mockConversationListData,

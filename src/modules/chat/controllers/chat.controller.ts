@@ -3,7 +3,7 @@ import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Query, Res, Use
 import { AccessGuard } from '@core/guards/access/access.guard';
 import { User } from '@core/decorators';
 import { ChatService } from '@modules/chat/services/chat.service';
-import { ChatGateway } from '@modules/chat/chat.gateway';
+import { ChatGateway } from '@modules/chat/gateways/chat.gateway';
 import { PaginationModel } from '@models/pagination.model';
 import { ConversationPrismaModel, MessagePrismaModel } from '@business/models/chat-prisma.model';
 import { UserPrismaModel } from '@business/models';

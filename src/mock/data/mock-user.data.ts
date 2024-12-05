@@ -5,14 +5,14 @@ export const mockUserData = {
     lastName: 'Doe',
     age: 21,
     avatar: '',
-    isOnline: false,
-    createdAt: new Date()
+    isOnline: false
 };
 
 export const mockFullUserData = {
     ...mockUserData,
     password: 'qwe123',
-    acceptTerms: true
+    acceptTerms: true,
+    createdAt: new Date()
 };
 
 export const mockUpdateUserData = {

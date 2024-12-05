@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { Controller, Post, Body, Res, HttpStatus, Req } from '@nestjs/common';
+import { Controller, Post, Body, Res, HttpStatus } from '@nestjs/common';
 import { AuthService } from '../services/auth/auth.service';
 import { LoginAuthDto, RegistrationAuthDto, SocialAuthDto } from '../dto';
 import { Cookies } from '@core/decorators';
@@ -21,11 +21,7 @@ export class AuthController {
     }
 
     @Post('login')
-    public async login(
-        @Res() res: Response,
-        @Req() req: any,
-        @Body() loginAuthDto: LoginAuthDto
-    ): Promise<Response<AuthResponse>> {
+    public async login(@Res() res: Response, @Body() loginAuthDto: LoginAuthDto): Promise<Response<AuthResponse>> {
         const result = await this.authService.login(loginAuthDto);
 
         res.cookie('refreshToken', result.tokens.refreshToken, {

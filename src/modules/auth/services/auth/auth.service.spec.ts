@@ -66,7 +66,7 @@ describe('AuthService', () => {
 
             mockUserPrismaService.getUserByEmail.mockResolvedValue(null);
             (hashProperty as jest.Mock).mockResolvedValue(dto.password);
-            mockUserPrismaService.createUser.mockResolvedValue({} as any);
+            mockUserPrismaService.createUser.mockResolvedValue({});
 
             await expect(service.registration(dto)).resolves.not.toThrow();
             expect(mockUserPrismaService.getUserByEmail).toHaveBeenCalledWith(dto.email);
@@ -77,7 +77,7 @@ describe('AuthService', () => {
         it('should throw an error if the email already exists', async () => {
             const dto: RegistrationAuthDto = mockAuthRegistrationData;
 
-            mockUserPrismaService.getUserByEmail.mockResolvedValue({} as any);
+            mockUserPrismaService.getUserByEmail.mockResolvedValue({});
 
             await expect(service.registration(dto)).rejects.toThrow(BadRequestException);
         });
@@ -101,10 +101,10 @@ describe('AuthService', () => {
 
             const result = await service.login(dto);
 
-            expect(result).toEqual({ tokens, user });
             expect(mockUserPrismaService.getFullUserByEmailOrId).toHaveBeenCalledWith(0, dto.email);
             expect(compareProperties).toHaveBeenCalledWith(dto.password, user.password);
             expect(getTokens).toHaveBeenCalled();
+            expect(result).toEqual({ tokens, user: mockUserData });
         });
 
         it('should throw an error if credentials are incorrect', async () => {

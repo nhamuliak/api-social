@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChatGateway } from './chat.gateway';
-import { ChatService } from './services/chat.service';
+import { ChatService } from '../services/chat.service';
 import { MockChatService } from '@mock/services';
 import { UserPrismaService } from '@business/services/user-prisma/user-prisma.service';
 import { MockUserPrismaService } from '@mock/prisma-service';

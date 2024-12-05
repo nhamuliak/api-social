@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { ChatService } from '@modules/chat/services/chat.service';
-import { ChatGateway } from '@modules/chat/chat.gateway';
+import { ChatGateway } from '@modules/chat/gateways/chat.gateway';
 import { AccessGuard } from '@core/guards/access/access.guard';
 
 describe('ChatController (e2e)', () => {

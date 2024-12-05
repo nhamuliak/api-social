@@ -57,7 +57,7 @@ describe('AuthController', () => {
 
             jest.spyOn(mockAuthService, 'login').mockResolvedValue({ tokens, user });
 
-            await controller.login(res, null, dto);
+            await controller.login(res, dto);
 
             expect(mockAuthService.login).toHaveBeenCalledWith(dto);
             expect(res.cookie).toHaveBeenCalledWith('refreshToken', tokens.refreshToken, {

@@ -2,11 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UserController } from './user.controller';
 import { UserService } from '../services/user.service';
 import { mockUpdateUserData, mockUserData } from '@mock/data';
-import { UserModel } from '@models/user.model';
 import { UpdateUserDto } from '@modules/user/dto/update-user.dto';
 import { mockResponse } from '@mock/helper';
 import { PaginationModel } from '@models/pagination.model';
 import { MockUserService } from '@mock/services';
+import { UserPrismaModel } from '@business/models';
 
 describe('UserController', () => {
     let controller: UserController;
@@ -35,7 +35,7 @@ describe('UserController', () => {
         it('should return users and pagination data', async () => {
             const res = mockResponse();
 
-            const mockUsers: PaginationModel<UserModel> = {
+            const mockUsers: PaginationModel<UserPrismaModel> = {
                 total: 1,
                 records: [mockUserData]
             };
@@ -54,7 +54,7 @@ describe('UserController', () => {
         it('should update and return the user', async () => {
             const res = mockResponse();
 
-            const mockUser: UserModel = mockUserData;
+            const mockUser: UserPrismaModel = mockUserData;
             const updateUserDto: UpdateUserDto = mockUpdateUserData;
             const mockFile = { originalname: 'avatar.jpg' } as Express.Multer.File;
 

@@ -110,7 +110,7 @@ export class UserPrismaService {
 
     public async createUser(body: UserPrismaBody): Promise<UserPrismaModel> {
         return this.prismaService.users.create({
-            data: Object.assign(body),
+            data: body,
             select: {
                 id: true,
                 email: true,
