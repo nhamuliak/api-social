@@ -1,0 +1,117 @@
+# buildspec file version
+version: 0.2
+
+env:
+  variables:
+    # App
+    APP_PORT: "3000"
+
+    NODE_ENV: "testing"
+
+    # DB
+    DB_TYPE: "postgres"
+    PG_PORT: "5432"
+
+  secrets-manager:
+    # Private environment variables:
+    # App
+    #    APP_JWT: "course-management-api/test:APP_JWT"
+    #    # Postgres
+    #
+    #    PG_HOST_TEST: "course-management-api/test:PG_HOST"
+    #    PG_PASSWORD_TEST: "course-management-api/test:PG_PASSWORD"
+    #    PG_USER_TEST: "course-management-api/test:PG_USER"
+    #    PG_DATABASE_TEST: "course-management-api/test:PG_DATABASE"
+    #
+    #    PG_HOST: "course-management-api/prod:PG_HOST"
+    #    PG_PASSWORD: "course-management-api/prod:PG_PASSWORD"
+    #    PG_USER: "course-management-api/prod:PG_USER"
+    PG_DATABASE: "mydatabase"
+    #
+    #    AWS_ACCESS_KEY_ID: "course-management-api/test:AWS_ACCESS_KEY_ID"
+    #    AWS_SECRET_ACCESS_KEY: "course-management-api/test:AWS_SECRET_ACCESS_KEY"
+    #    AWS_S3_REGION: "course-management-api/test:AWS_S3_REGION"
+    #    AWS_APP_BUCKET_NAME: "course-management-api/test:AWS_APP_BUCKET_NAME"
+    #    REPO_DOMAIN: "course-management-api/test:ECR_REPO_DOMAIN"
+    #    REPO_URI: "course-management-api/test:ECR_REPO_URI"
+
+    REPO_DOMAIN: "381491854878.dkr.ecr.us-east-1.amazonaws.com"
+    REPO_URI: "381491854878.dkr.ecr.us-east-1.amazonaws.com/app-chat-dev"
+
+
+    COOKIE_SECRET: "app-social/db/prod:COOKIE_SECRET"
+
+    DATABASE_URL: "app-social/db/prod:DATABASE_URL"
+    #    DATABASE_URL: "postgresql://postgres:admin@localhost:5432/api-social?schema=public"
+
+    GOOGLE_CLIENT_ID: "17871673269-58p5sm10g9cpe3uanpiulr1v7upuctse.apps.googleusercontent.com"
+    GOOGLE_CLIENT_SECRET: "app-social/db/prod:GOOGLE_CLIENT_SECRET"
+
+    ACCESS_SECRET: "app-social/db/prod:ACCESS_SECRET"
+    REFRESH_SECRET: "app-social/db/prod:REFRESH_SECRET"
+
+    AWS_ACCESS_KEY_ID: "app-social/db/prod:AWS_ACCESS_KEY_ID"
+    AWS_SECRET_ACCESS_KEY: "app-social/db/prod:AWS_SECRET_ACCESS_KEY"
+    AWS_REGION: "us-east-1"
+    AWS_S3_BUCKET_NAME: "app-chat-avatars-test"
+
+    SMTP_HOST: "smtp.gmail.com"
+    SMTP_PORT: "587"
+    SMTP_USER: "ifuadev@gmail.com"
+    SMTP_PASSWORD: "eguf zuyj cnql aleh"
+
+
+phases:
+  install:
+    commands:
+      - echo Install phase started.
+
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - echo "default region:" $AWS_DEFAULT_REGION
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPO_DOMAIN
+
+      - echo Install phase completed.
+  pre_build:
+    commands:
+      - echo Pulling Docker image...
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG_TESTING="${COMMIT_HASH}-testing"
+
+      - docker pull $REPO_URI:$IMAGE_TAG_TESTING
+  build:
+    commands:
+      - echo Running tests...
+      - docker images
+      - docker ps
+
+      # Save environment variables to a file
+      - echo APP_PORT=$APP_PORT >> .testing.env
+      -
+      - echo COOKIE_SECRET=$COOKIE_SECRET >> .testing.env
+      - echo DATABASE_URL=$DATABASE_URL >> .testing.env
+
+      - echo Running tests...
+      - docker run --env-file .testing.env $REPO_URI:$IMAGE_TAG_TESTING
+      - docker run --env-file .testing.env $REPO_URI:$IMAGE_TAG_TESTING -c "npm run test:e2e"
+      - echo Testing completed.
+
+      # Check initial db
+      - docker run --env-file .testing.env $REPO_URI:$IMAGE_TAG_TESTING -c "PGPASSWORD=$PG_PASSWORD psql -h $PG_HOST -p $PG_PORT -U postgres -tc \"SELECT 1 FROM pg_database WHERE datname = '$PG_DATABASE'\" | grep -q 1 || PGPASSWORD=$PG_PASSWORD psql -h $PG_HOST -p $PG_PORT -U postgres -c \"CREATE DATABASE \\\"$PG_DATABASE\\\";\""
+        
+        docker run --env-file .testing.env $REPO_URI:$IMAGE_TAG_TESTING -c "\
+        PGPASSWORD=$PG_PASSWORD psql $DATABASE_URL -tc \"SELECT 1 FROM pg_database WHERE datname = '$PG_DATABASE'\" | grep -q 1 || \
+        PGPASSWORD=$PG_PASSWORD psql $DATABASE_URL -c \"CREATE DATABASE \\\"$PG_DATABASE\\\";\""
+#artifacts:
+#  files:
+#    - 'test/reports/junit-report.xml'
+#  discard-paths: yes
+#  base-directory: test/reports
+#
+## TODO: Update source
+#reports:
+#  jest_reports:
+#    files:
+#      - junit-report.xml
+#    file-format: JUNITXML
+#    base-directory: test/reports

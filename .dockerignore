@@ -1,0 +1,11 @@
+.vscode
+.nx
+
+# WebStorm
+*.idea
+../.idea
+/.idea
+
+.github
+node_modules
+prisma/.env
