@@ -55,10 +55,10 @@ env:
     AWS_REGION: "us-east-1"
     AWS_S3_BUCKET_NAME: "app-chat-avatars-test"
 
-    SMTP_HOST: "smtp.gmail.com"
-    SMTP_PORT: "587"
-    SMTP_USER: "ifuadev@gmail.com"
-    SMTP_PASSWORD: "eguf zuyj cnql aleh"
+    SMTP_HOST: "app-social/db/prod:SMTP_HOST"
+    SMTP_PORT: "app-social/db/prod:SMTP_PORT"
+    SMTP_USER: "app-social/db/prod:SMTP_USER"
+    SMTP_PASSWORD: "app-social/db/prod:SMTP_PASSWORD"
 
 
 phases:
