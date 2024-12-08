@@ -12,9 +12,7 @@ RUN npm cache clean --force
 # Install dependencies
 RUN npm install
 
-# Install Prisma globally (optional, but sometimes needed for migrations)
-#RUN npm install -g prisma
-
+# Run build
 RUN npm run build
 
 # Expose the application port
