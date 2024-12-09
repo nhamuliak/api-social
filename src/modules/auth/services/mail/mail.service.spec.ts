@@ -38,7 +38,7 @@ describe('MailService', () => {
             const to = 'user@example.com';
             const name = 'User';
             const token = 'testToken';
-            const resetLink = `http://localhost:4300/auth/reset-password?token=${token}`;
+            const resetLink = `${process.env.FRONTEND_LINK_URL}/auth/reset-password?token=${token}`;
 
             await service.sendResetPassword(to, name, token);
 
