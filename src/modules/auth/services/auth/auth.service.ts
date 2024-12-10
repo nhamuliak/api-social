@@ -110,7 +110,7 @@ export class AuthService {
         }
 
         const payload: PayloadModel = this.getPayload(user);
-        const token = await getAccessToken(payload);
+        const token = await getAccessToken(payload, '5m');
         const name = `${user.firstName} ${user.lastName}`;
 
         await this.mailService.sendResetPassword(email, name, token);
